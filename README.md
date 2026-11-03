@@ -1,59 +1,78 @@
-# FrontHuellas
+# Front-Huellas | Interfaz Web y Experiencia Asistencial Veterinaria
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.7.
+> **Capa de Presentación e Interfaz de Usuario Web (Frontend)**  
+> _Clínica Veterinaria Huellas del Valle S.A.S. — Pereira, Colombia_
 
-## Development server
+[![Capa del Sistema](https://img.shields.io/badge/Capa-Frontend%20%2F%20Interfaz%20Web-DD0031?style=flat)](#)
+[![Experiencia de Usuario](https://img.shields.io/badge/Diseño-Intuitivo%20%26%20Responsivo-orange?style=flat)](#)
+[![Cumplimiento Legal](https://img.shields.io/badge/Normativa-Habeas%20Data%20%7C%20Ley%20576-blue?style=flat)](#)
+[![Seguridad en Interfaz](https://img.shields.io/badge/Historia%20Clínica-Inalterable%20en%20Cliente-red?style=flat)](#)
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## 📌 Tabla de Contenidos
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- [1. Enfoque y Propósito de la Interfaz](#1-enfoque-y-propósito-de-la-interfaz)
+- [2. Objetivo Final del Frontend](#2-objetivo-final-del-frontend)
+- [3. Alcance de la Experiencia de Usuario](#3-alcance-de-la-experiencia-de-usuario)
+- [4. Experiencia Operativa por Áreas](#4-experiencia-operativa-por-áreas)
+- [5. Equipo de Desarrollo y Liderazgo](#5-equipo-de-desarrollo-y-liderazgo)
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 1. Enfoque y Propósito de la Interfaz
 
-```bash
-ng generate component component-name
-```
+**Front-Huellas** constituye la **capa de interacción visual y experiencia de usuario (Frontend)** diseñada para modernizar, digitalizar y agilizar la dinámica operativa diaria de la **Clínica Veterinaria Huellas del Valle S.A.S.** Su razón de ser es erradicar de forma definitiva los procesos manuales fragmentados —cuadernos físicos, hojas de cálculo en Excel dispersas, carpetas físicas y memorias extraíbles— reemplazándolos por una **interfaz web ergonómica, ágil y colaborativa**, accesible desde ordenadores de escritorio, tablets clínicas y dispositivos móviles.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+La interfaz resuelve de manera directa y visual los problemas asistenciales del día a día en la clínica:
 
-```bash
-ng generate --help
-```
+- **Diferenciación visual anti-homonimia:** Formularios que garantizan la identificación clara, precisa e inequívoca de cada mascota y tutor legal mediante identificadores únicos inmutables, erradicando confusiones críticas donde pacientes distintos comparten el mismo nombre (caso emblemático *“Dos Max”*).
+- **Agenda interactiva con bloqueo de conflictos:** Calendarios dinámicos con retroalimentación visual inmediata que detectan y previenen el cruce o solapamiento de horarios entre médicos veterinarios y salones de consulta, garantizando una recepción organizada y tiempos de espera mínimos.
+- **Blindaje normativo en la experiencia de captura:**
+  - **Ley 1581 de 2012 (Habeas Data):** Captura explícita del consentimiento informado y validación rigurosa de documentos de identidad en el registro de propietarios y tutores.
+  - **Ley 576 de 2000 (Código de Ética Médica Veterinaria):** Bloqueo visual permanente de edición en consultas finalizadas y ausencia total de opciones destructivas (sin botón de eliminación física), salvaguardando la inalterabilidad y custodia del expediente médico.
 
-## Building
+> 💡 **Impacto en el servicio:** Cada vista y componente de la interfaz prioriza el bienestar animal y la tranquilidad de los tutores, reduciendo el esfuerzo administrativo del personal médico y optimizando la velocidad de atención.
 
-To build the project run:
+---
 
-```bash
-ng build
-```
+## 2. Objetivo Final del Frontend
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Consolidar y entregar al equipo de la clínica una **herramienta web intuitiva, ágil y de alta fidelidad visual** que centralice de punta a punta la interacción con los flujos de atención veterinaria, el registro de pacientes, el control de insumos y los cobros, reduciendo drásticamente los tiempos de espera y brindando una navegación fluida que blinde la toma de decisiones clínicas y administrativas mediante información clara e instantánea.
 
-## Running unit tests
+---
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## 3. Alcance de la Experiencia de Usuario
 
-```bash
-ng test
-```
+La interfaz de **Front-Huellas** materializa la interacción del personal mediante componentes y vistas diseñadas específicamente para cada necesidad operativa:
 
-## Running end-to-end tests
+- 🐾 **Módulo Visual de Clientes y Pacientes:** Pantallas con búsqueda en tiempo real, registro guiado de tutores con validación de identidad y fichas biológicas completas vinculadas a cada mascota sin riesgo de duplicidades.
+- 📅 **Planificador y Calendario Dinámico:** Vistas conmutables (diaria, semanal y mensual) con código de colores según el estado de la atención y alertas automáticas que impiden el agendamiento de citas duplicadas o solapadas.
+- 🩺 **Consola Clínica y Expediente Médico:** Entorno estructurado para registrar síntomas, diagnósticos, constantes fisiológicas y tratamientos; área visual para arrastrar y visualizar adjuntos clínicos (.pdf, .jpg, .png, máx. 5 MB) y generador en pantalla de carné digital de vacunación.
+- 📦 **Tablero Visual de Farmacia e Inventario:** Monitoreo mediante semáforos de color (🟢 óptimo, 🟡 stock mínimo / vencimiento cercano, 🔴 crítico / vencido) para alertar visualmente sobre la necesidad de reabastecimiento antes de que ocurra un desabastecimiento.
+- 💳 **Terminal de Cobro (POS) y Caja Diaria:** Consola ágil para liquidar servicios clínicos, medicamentos y productos de tienda, admitiendo múltiples métodos de pago, control de abonos parciales y una interfaz guiada para el arqueo y cierre diario de caja.
+- 📊 **Panel de Control y Trazabilidad:** Indicadores gráficos de rendimiento asistencial, reportes exportables y visor tabular de auditoría que refleja de forma transparente la fecha, hora y usuario responsable de cada acción.
 
-For end-to-end (e2e) testing, run:
+---
 
-```bash
-ng e2e
-```
+## 4. Experiencia Operativa por Áreas
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+| Rol / Área | Experiencia y Beneficios Clave en la Interfaz Web |
+| :--- | :--- |
+| **Recepción & Caja** | • Búsqueda ágil de tutores y pacientes en menos de un segundo.<br>• Agendamiento visual en calendario sin colisiones horarias.<br>• Terminal POS rápida con registro claro de abonos y asistente de arqueo de caja. |
+| **Equipo Veterinario** | • Acceso instantáneo a la historia clínica cronológica e inalterable.<br>• Carga y previsualización ágil de radiografías y exámenes de laboratorio.<br>• Emisión de carnés digitales de vacunación y control de refuerzos. |
+| **Farmacia e Inventario** | • Semáforo tricolor para detectar a simple vista insumos por caducar o agotarse.<br>• Directorio interactivo de proveedores para agilizar pedidos. |
+| **Dirección & Administración** | • Tableros de mando ejecutivos con estadísticas de atención e ingresos.<br>• Visor de auditoría para trazabilidad completa de cada movimiento realizado en la interfaz. |
 
-## Additional Resources
+---
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## 5. Equipo de Desarrollo y Liderazgo
+
+La concepción, análisis funcional, diseño de experiencia de usuario (UX/UI) e implementación integral de la interfaz **Front-Huellas** ha sido liderada por:
+
+- **Eduardo Alexander López Arango** — *Liderazgo de Desarrollo y Diseño de Experiencia*
+- **Jhoan Sebastian Guevara Arango** — *Liderazgo de Desarrollo y Análisis Funcional*
+
+---
+
+_Clínica Veterinaria Huellas del Valle S.A.S. — Comprometidos con la salud, la tecnología y el cuidado animal._
