@@ -1,3 +1,2 @@
 // Layout module exports
-export {};
-
+export * from './main-layout/main-layout.component';

@@ -1,0 +1,81 @@
+<div class="flex h-screen w-full overflow-hidden bg-slate-50">
+  <!-- Backdrop móvil con control de accesibilidad -->
+  @if (isSidebarOpen()) {
+    <div 
+      class="fixed inset-0 z-20 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden"
+      (click)="closeSidebar()"
+      aria-hidden="true">
+    </div>
+  }
+
+  <!-- Sidebar Lateral -->
+  <aside 
+    [class.-translate-x-full]="!isSidebarOpen()"
+    class="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:translate-x-0">
+    
+    <!-- Encabezado Sidebar -->
+    <div class="flex h-16 items-center justify-between border-b border-slate-100 px-6">
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold tracking-tight text-brand-600">Huellas</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-clinical-teal">del Valle</span>
+      </div>
+      <button 
+        type="button"
+        (click)="closeSidebar()"
+        class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+        aria-label="Cerrar navegación">
+        ✕
+      </button>
+    </div>
+
+    <!-- Navegación Dinámica -->
+    <nav class="flex-1 space-y-1.5 overflow-y-auto px-4 py-4" aria-label="Menú principal">
+      @for (item of navigationItems(); track item.path) {
+        <a 
+          [routerLink]="item.path"
+          routerLinkActive="bg-brand-50 text-brand-700 font-semibold"
+          (click)="closeSidebar()"
+          class="group flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900">
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <!-- Footer de Sidebar / Estado de conexión -->
+    <div class="border-t border-slate-100 p-4">
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <span class="h-2 w-2 rounded-full bg-clinical-success" aria-hidden="true"></span>
+        <span>Sistema en línea</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Área Principal -->
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <!-- Barra Superior -->
+    <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8">
+      <div class="flex items-center gap-4">
+        <button 
+          type="button"
+          (click)="toggleSidebar()"
+          class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+          aria-label="Abrir menú de navegación">
+          ☰
+        </button>
+        <span class="text-sm font-medium text-slate-500">Clínica Veterinaria Huellas del Valle S.A.S.</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-700">
+          HV
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenedor del Router Outlet -->
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 lg:p-8">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
