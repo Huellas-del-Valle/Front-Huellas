@@ -1,51 +1,211 @@
-<div class="flex h-screen w-full overflow-hidden bg-slate-50">
-  <!-- Backdrop móvil con control de accesibilidad -->
-  @if (isSidebarOpen()) {
+<div class="flex h-screen w-full overflow-hidden bg-surface-app text-slate-700">
+  
+  <!-- Backdrop móvil -->
+  @if (isMobileOpen()) {
     <div 
-      class="fixed inset-0 z-20 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden"
-      (click)="closeSidebar()"
+      class="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity"
+      (click)="closeMobileMenu()"
       aria-hidden="true">
     </div>
   }
 
-  <!-- Sidebar Lateral -->
+  <!-- Sidebar Lateral Colapsable -->
   <aside 
-    [class.-translate-x-full]="!isSidebarOpen()"
-    class="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:translate-x-0">
+    [class.w-64]="!isCollapsed()"
+    [class.w-20]="isCollapsed()"
+    [class.-translate-x-full]="!isMobileOpen()"
+    class="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200/70 bg-surface-sidebar transition-all duration-300 ease-in-out lg:static lg:translate-x-0">
     
-    <!-- Encabezado Sidebar -->
-    <div class="flex h-16 items-center justify-between border-b border-slate-100 px-6">
-      <div class="flex items-center gap-2">
-        <span class="text-xl font-bold tracking-tight text-brand-600">Huellas</span>
-        <span class="text-xs font-semibold uppercase tracking-wider text-clinical-teal">del Valle</span>
+    <!-- Header del Sidebar (Botón Colapso arriba + Logo Huella) -->
+    <div class="border-b border-slate-100 p-4 flex flex-col gap-3">
+      <!-- Fila del Botón de Colapso / Cerrar Móvil -->
+      <div class="flex items-center" [class.justify-between]="!isCollapsed()" [class.justify-center]="isCollapsed()">
+        <button 
+          type="button"
+          (click)="toggleSidebarCollapse()"
+          class="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+          [title]="isCollapsed() ? 'Expandir barra' : 'Contraer barra'">
+          @if (!isCollapsed()) {
+            <!-- Icono |◀ -->
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 19V5"></path>
+              <polyline points="15 17 9 12 15 7"></polyline>
+            </svg>
+          } @else {
+            <!-- Icono ▶| -->
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 5v14"></path>
+              <polyline points="9 7 15 12 9 17"></polyline>
+            </svg>
+          }
+        </button>
+
+        <!-- Botón cerrar (Móvil) -->
+        <button 
+          type="button" 
+          (click)="closeMobileMenu()" 
+          class="lg:hidden text-slate-400 hover:text-slate-600 p-1">
+          ✕
+        </button>
       </div>
-      <button 
-        type="button"
-        (click)="closeSidebar()"
-        class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
-        aria-label="Cerrar navegación">
-        ✕
-      </button>
+
+      <!-- Identidad de Marca: Logo + Título (Centrado sin desbordes al colapsar) -->
+      <div class="flex items-center gap-3 overflow-hidden" [class.justify-center]="isCollapsed()">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-pine-700 text-white shadow-sm">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <ellipse cx="6" cy="8" rx="2" ry="2.6"></ellipse>
+            <ellipse cx="10.5" cy="4.5" rx="2" ry="2.6"></ellipse>
+            <ellipse cx="15.5" cy="5" rx="2" ry="2.6"></ellipse>
+            <ellipse cx="19.5" cy="9.5" rx="2" ry="2.6"></ellipse>
+            <path d="M12.5 10.5c-3.2 0-6 2.2-6 5.5 0 2.2 1.8 4.2 4.2 4.2.8 0 1.5-.3 2.1-.6.5.3 1.2.6 2 .6 2.4 0 4.2-2 4.2-4.2 0-3.3-2.8-5.5-6.5-5.5z"></path>
+          </svg>
+        </div>
+
+        @if (!isCollapsed()) {
+          <div class="flex flex-col min-w-0">
+            <span class="text-sm font-bold text-slate-900 leading-tight truncate">Huellas del Valle</span>
+            <span class="text-xs font-bold text-slate-900 leading-tight">S.A.S.</span>
+          </div>
+        }
+      </div>
     </div>
 
-    <!-- Navegación Dinámica -->
-    <nav class="flex-1 space-y-1.5 overflow-y-auto px-4 py-4" aria-label="Menú principal">
-      @for (item of navigationItems(); track item.path) {
+    <!-- Etiqueta de Sección -->
+    @if (!isCollapsed()) {
+      <div class="px-5 pt-3 pb-1">
+        <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Gestión Clínica</span>
+      </div>
+    }
+
+    <!-- Navegación Dinámica con Íconos Vectoriales fieles al Mockup -->
+    <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 py-2">
+      @for (item of navItems(); track item.label) {
         <a 
           [routerLink]="item.path"
-          routerLinkActive="bg-brand-50 text-brand-700 font-semibold"
-          (click)="closeSidebar()"
-          class="group flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900">
-          <span>{{ item.label }}</span>
+          routerLinkActive="bg-surface-active text-pine-700 font-semibold border-pine-700 shadow-xs"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeMobileMenu()"
+          [title]="isCollapsed() ? item.label : ''"
+          class="group flex items-center rounded-xl transition-all border border-transparent text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          [class.justify-center]="isCollapsed()"
+          [class.h-11]="isCollapsed()"
+          [class.w-11]="isCollapsed()"
+          [class.mx-auto]="isCollapsed()"
+          [class.px-3.5]="!isCollapsed()"
+          [class.py-2.5]="!isCollapsed()"
+          [class.gap-3]="!isCollapsed()">
+          
+          <!-- Ícono vectorial (estilo mockup) -->
+          <span class="shrink-0 flex items-center justify-center transition-colors">
+            @switch (item.iconName) {
+              @case ('grid') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                </svg>
+              }
+              @case ('roles') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="m15 9-6 6"></path>
+                  <path d="m9 9 6 6"></path>
+                </svg>
+              }
+              @case ('users') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              }
+              @case ('heart') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+              }
+              @case ('paw') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="9" r="1.5"></circle>
+                  <circle cx="10" cy="5.5" r="1.5"></circle>
+                  <circle cx="14" cy="5.5" r="1.5"></circle>
+                  <circle cx="18" cy="9" r="1.5"></circle>
+                  <path d="M12 11c-2.5 0-4.5 1.8-4.5 4 0 1.8 1.2 3.5 4.5 3.5s4.5-1.7 4.5-3.5c0-2.2-2-4-4.5-4z"></path>
+                </svg>
+              }
+              @case ('clock') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <polyline points="12 7 12 12 15 14"></polyline>
+                </svg>
+              }
+              @case ('box') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3.5" y="3.5" width="17" height="17" rx="2.5"></rect>
+                  <path d="m9.5 9.5 5 5"></path>
+                  <path d="m14.5 9.5-5 5"></path>
+                </svg>
+              }
+              @case ('truck') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"></path>
+                </svg>
+              }
+              @case ('cash') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                  <line x1="4" y1="7" x2="20" y2="7"></line>
+                  <line x1="4" y1="17" x2="20" y2="17"></line>
+                  <path d="M12 9v6m-2-4.5h3.5a1 1 0 0 1 0 2H10.5a1 1 0 0 0 0 2H14"></path>
+                </svg>
+              }
+              @case ('reports') {
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>
+                  <path d="M12 7v10"></path>
+                  <path d="M14.5 9.5a2 2 0 0 0-4 0c0 2.5 4 1.5 4 4a2 2 0 0 1-4 0"></path>
+                </svg>
+              }
+            }
+          </span>
+
+          @if (!isCollapsed()) {
+            <span class="truncate">{{ item.label }}</span>
+          }
         </a>
       }
     </nav>
 
-    <!-- Footer de Sidebar / Estado de conexión -->
-    <div class="border-t border-slate-100 p-4">
-      <div class="flex items-center gap-2 text-xs text-slate-500">
-        <span class="h-2 w-2 rounded-full bg-clinical-success" aria-hidden="true"></span>
-        <span>Sistema en línea</span>
+    <!-- Footer de Usuario / Perfil (Exacto a la imagen) -->
+    <div class="border-t border-slate-100 p-3">
+      <div 
+        class="flex items-center rounded-xl p-1.5"
+        [class.justify-center]="isCollapsed()"
+        [class.gap-3]="!isCollapsed()">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+          UA
+        </div>
+        @if (!isCollapsed()) {
+          <div class="flex flex-col min-w-0 flex-1">
+            <span class="text-xs font-bold text-slate-800 truncate">Usuario Administrador</span>
+            <div>
+              <span class="inline-block text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium border border-emerald-200/60 leading-none">Administrador</span>
+            </div>
+          </div>
+          <!-- Botón de Salir / Logout -->
+          <button 
+            type="button" 
+            class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            title="Cerrar sesión">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        }
       </div>
     </div>
   </aside>
@@ -53,21 +213,28 @@
   <!-- Área Principal -->
   <div class="flex flex-1 flex-col overflow-hidden">
     <!-- Barra Superior -->
-    <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8">
+    <header class="flex h-16 items-center justify-between border-b border-slate-200/60 bg-white px-4 lg:px-8 shadow-sm">
       <div class="flex items-center gap-4">
+        <!-- Botón Hamburguesa Móvil -->
         <button 
           type="button"
-          (click)="toggleSidebar()"
+          (click)="toggleMobileMenu()"
           class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
-          aria-label="Abrir menú de navegación">
+          aria-label="Abrir menú">
           ☰
         </button>
-        <span class="text-sm font-medium text-slate-500">Clínica Veterinaria Huellas del Valle S.A.S.</span>
+        <div class="flex items-center gap-2 text-xs text-slate-400">
+          <span>Clínica</span>
+          <span>›</span>
+          <span class="text-slate-700 font-semibold">Panel de Control</span>
+        </div>
       </div>
 
+      <!-- Badge de validación de Environment -->
       <div class="flex items-center gap-3">
-        <div class="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-700">
-          HV
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-mono">
+          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>API: {{ apiUrl }}</span>
         </div>
       </div>
     </header>
@@ -78,4 +245,3 @@
     </main>
   </div>
 </div>
-

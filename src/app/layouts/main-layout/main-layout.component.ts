@@ -1,13 +1,15 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
-export interface NavigationItem {
+export interface NavItem {
   readonly label: string;
   readonly path: string;
-  readonly icon: string;
-  readonly badge?: string;
+  readonly iconName: string;
 }
+
+export type NavigationItem = NavItem;
 
 @Component({
   selector: 'app-main-layout',
@@ -18,25 +20,37 @@ export interface NavigationItem {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainLayoutComponent {
-  // Estado reactivo para visibilidad del drawer móvil
-  readonly isSidebarOpen = signal<boolean>(false);
+  readonly apiUrl = environment.apiUrl;
 
-  // Menú dinámico tipado según casos de uso del SRS
-  readonly navigationItems = signal<readonly NavigationItem[]>([
-    { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-    { label: 'Agenda y Citas', path: '/appointments', icon: 'calendar' },
-    { label: 'Clientes y Mascotas', path: '/patients', icon: 'pets' },
-    { label: 'Historias Clínicas', path: '/medical-records', icon: 'clinical_notes' },
-    { label: 'Inventario y Farmacia', path: '/inventory', icon: 'inventory' },
-    { label: 'Facturación y Caja', path: '/billing', icon: 'payments' }
+  // Estado del sidebar en escritorio (expandido vs colapsado)
+  readonly isCollapsed = signal<boolean>(false);
+
+  // Estado del drawer en móviles
+  readonly isMobileOpen = signal<boolean>(false);
+
+  // Módulos exactos según el mockup de navegación
+  readonly navItems = signal<readonly NavItem[]>([
+    { label: 'Dashboard', path: '/dashboard', iconName: 'grid' },
+    { label: 'Roles y Permisos', path: '/roles', iconName: 'roles' },
+    { label: 'Gestión de Usuarios', path: '/users', iconName: 'users' },
+    { label: 'Clientes', path: '/clients', iconName: 'heart' },
+    { label: 'Mascotas', path: '/pets', iconName: 'paw' },
+    { label: 'Agenda de Citas', path: '/appointments', iconName: 'clock' },
+    { label: 'Inventario', path: '/inventory', iconName: 'box' },
+    { label: 'Proveedores', path: '/suppliers', iconName: 'truck' },
+    { label: 'Caja', path: '/cash', iconName: 'cash' },
+    { label: 'Reportes y Auditoría', path: '/reports', iconName: 'reports' }
   ]);
 
-  toggleSidebar(): void {
-    this.isSidebarOpen.update((open) => !open);
+  toggleSidebarCollapse(): void {
+    this.isCollapsed.update((val) => !val);
   }
 
-  closeSidebar(): void {
-    this.isSidebarOpen.set(false);
+  toggleMobileMenu(): void {
+    this.isMobileOpen.update((val) => !val);
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileOpen.set(false);
   }
 }
-

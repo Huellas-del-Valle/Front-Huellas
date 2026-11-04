@@ -12,6 +12,14 @@
 npm-debug.log
 yarn-error.log
 
+# Sensitive environment files and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
 # IDEs and editors
 .idea/
 .vscode/*
