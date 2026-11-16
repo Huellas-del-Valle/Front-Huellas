@@ -1,107 +1,128 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClient, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
-import { UserSession } from '../models/auth.models';
+import { SessionService } from './session.service';
+import { LoginRequest, LoginResponse } from '../models/auth.models';
+import { environment } from '../../../environments/environment';
 
 describe('AuthService', () => {
-  let service: AuthService;
+  let authService: AuthService;
+  let sessionService: SessionService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AuthService]
+      providers: [
+        AuthService,
+        SessionService,
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     });
-    service = TestBed.inject(AuthService);
+
+    authService = TestBed.inject(AuthService);
+    sessionService = TestBed.inject(SessionService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
-    service.clearSession();
+    httpMock.verify();
+    sessionService.clearSession();
   });
 
-  it('debe iniciar sin sesión activa por defecto', () => {
-    expect(service.currentUser()).toBeNull();
-    expect(service.role()).toBeNull();
-    expect(service.token()).toBeNull();
-    expect(service.isAuthenticated()).toBe(false);
-  });
+  describe('login()', () => {
+    it('debe consumir POST /api/v1/auth/login y almacenar el token y usuario en SessionService', () => {
+      const credentials: LoginRequest = {
+        email: 'veterinario@huellasdelvalle.com',
+        password: 'Password123!'
+      };
 
-  it('debe actualizar las señales reactivas al establecer una sesión válida', () => {
-    const mockSession: UserSession = {
-      id: 'usr-01',
-      name: 'Dra. Andrea',
-      email: 'andrea@huellasdelvalle.com',
-      role: 'VETERINARIO',
-      token: 'jwt-header.payload.signature',
-      tokenExpiresAt: Date.now() + 3600000
-    };
+      const mockResponse: LoginResponse = {
+        accessToken: 'mock-jwt-token-valle-xyz',
+        user: {
+          id: 'uuid-vet-123',
+          fullName: 'Dra. Camila Morales',
+          email: 'veterinario@huellasdelvalle.com',
+          role: 'VETERINARIO'
+        }
+      };
 
-    service.setSession(mockSession);
+      authService.login(credentials).subscribe((res) => {
+        expect(res).toEqual(mockResponse);
+        expect(sessionService.isAuthenticated()).toBe(true);
+        expect(sessionService.getToken()).toBe('mock-jwt-token-valle-xyz');
+        expect(sessionService.getUserRole()).toBe('VETERINARIO');
+        expect(sessionService.currentUser()?.name).toBe('Dra. Camila Morales');
+        expect(sessionService.currentUser()?.email).toBe('veterinario@huellasdelvalle.com');
+      });
 
-    expect(service.currentUser()).toEqual(mockSession);
-    expect(service.role()).toBe('VETERINARIO');
-    expect(service.token()).toBe('jwt-header.payload.signature');
-    expect(service.isAuthenticated()).toBe(true);
-    expect(service.getToken()).toBe('jwt-header.payload.signature');
-    expect(service.getUserRole()).toBe('VETERINARIO');
-  });
-
-  it('debe limpiar reactivamente la sesión con clearSession y logout', () => {
-    service.setMockSession('ADMIN', 'Dr. Roberto');
-    expect(service.isAuthenticated()).toBe(true);
-
-    service.clearSession();
-
-    expect(service.currentUser()).toBeNull();
-    expect(service.role()).toBeNull();
-    expect(service.token()).toBeNull();
-    expect(service.isAuthenticated()).toBe(false);
-  });
-
-  describe('hasRole (RBAC)', () => {
-    it('debe retornar true si no se especifican roles restrictivos', () => {
-      expect(service.hasRole(undefined)).toBe(true);
-      expect(service.hasRole(null)).toBe(true);
-      expect(service.hasRole([])).toBe(true);
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(credentials);
+      req.flush(mockResponse);
     });
 
-    it('debe retornar false si el usuario no tiene sesión activa', () => {
-      service.clearSession();
-      expect(service.hasRole('ADMIN')).toBe(false);
-      expect(service.hasRole(['VETERINARIO', 'RECEPCIONISTA'])).toBe(false);
+    it('debe propagar el error HTTP si las credenciales son incorrectas (401)', () => {
+      const credentials: LoginRequest = {
+        email: 'invalido@huellas.com',
+        password: 'wrong'
+      };
+
+      authService.login(credentials).subscribe({
+        next: () => expect.unreachable('La petición debía fallar con 401'),
+        error: (err) => {
+          expect(err.status).toBe(401);
+          expect(sessionService.isAuthenticated()).toBe(false);
+          expect(sessionService.getToken()).toBeNull();
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
 
-    it('debe validar correctamente el rol ADMIN', () => {
-      service.setMockSession('ADMIN', 'Roberto Admin');
-      expect(service.hasRole('ADMIN')).toBe(true);
-      expect(service.hasRole(['ADMIN', 'VETERINARIO'])).toBe(true);
-      expect(service.hasRole('RECEPCIONISTA')).toBe(false);
-    });
+    it('debe propagar el error HTTP si el servidor no responde o hay fallo de red', () => {
+      const credentials: LoginRequest = {
+        email: 'admin@huellas.com',
+        password: 'pass'
+      };
 
-    it('debe validar correctamente el rol VETERINARIO', () => {
-      service.setMockSession('VETERINARIO', 'Dra. Camila');
-      expect(service.hasRole('VETERINARIO')).toBe(true);
-      expect(service.hasRole(['ADMIN', 'VETERINARIO'])).toBe(true);
-      expect(service.hasRole('ADMIN')).toBe(false);
-      expect(service.hasRole('RECEPCIONISTA')).toBe(false);
-    });
+      authService.login(credentials).subscribe({
+        next: () => expect.unreachable('La petición debía fallar'),
+        error: (err) => {
+          expect(err.status).toBe(0);
+          expect(sessionService.isAuthenticated()).toBe(false);
+        }
+      });
 
-    it('debe validar correctamente el rol RECEPCIONISTA', () => {
-      service.setMockSession('RECEPCIONISTA', 'Carlos');
-      expect(service.hasRole('RECEPCIONISTA')).toBe(true);
-      expect(service.hasRole(['ADMIN', 'RECEPCIONISTA'])).toBe(true);
-      expect(service.hasRole(['ADMIN', 'VETERINARIO'])).toBe(false);
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      req.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
     });
   });
 
-  it('debe considerar no autenticado un usuario con token expirado', () => {
-    service.setSession({
-      id: 'usr-exp',
-      name: 'Dr. Expirado',
-      email: 'exp@huellas.com',
-      role: 'ADMIN',
-      token: 'expired-token',
-      tokenExpiresAt: Date.now() - 5000
+  describe('logout() y delegación', () => {
+    it('debe limpiar la sesión a través de logout()', () => {
+      sessionService.setMockSession('ADMIN', 'Roberto Admin');
+      expect(authService.isAuthenticated()).toBe(true);
+
+      authService.logout();
+
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(authService.getToken()).toBeNull();
+      expect(authService.currentUser()).toBeNull();
     });
 
-    expect(service.isAuthenticated()).toBe(false);
-    expect(service.hasRole('ADMIN')).toBe(false);
+    it('debe exponer señales y métodos compatibles delegados a SessionService', () => {
+      authService.setMockSession('RECEPCIONISTA', 'Carlos');
+
+      expect(authService.getToken()).toBe('mock-jwt-token-huellas-xyz');
+      expect(authService.getUserRole()).toBe('RECEPCIONISTA');
+      expect(authService.hasRole('RECEPCIONISTA')).toBe(true);
+      expect(authService.hasRole('ADMIN')).toBe(false);
+
+      authService.clearSession();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
   });
 });
