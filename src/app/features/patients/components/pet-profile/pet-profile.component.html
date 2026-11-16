@@ -1,0 +1,157 @@
+<div class="max-w-5xl mx-auto space-y-6">
+  @if (isLoading()) {
+    <div class="rounded-2xl bg-surface-card p-12 text-center border border-slate-200/80">
+      <p class="text-sm font-medium text-slate-500">Cargando expediente del paciente...</p>
+    </div>
+  } @else if (errorMessage() || !pet()) {
+    <div class="rounded-2xl bg-red-50 border border-red-200 p-6 text-center space-y-3">
+      <p class="text-sm font-semibold text-red-700">{{ errorMessage() }}</p>
+      <a routerLink="/patients" class="inline-block rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white">
+        Volver al catálogo
+      </a>
+    </div>
+  } @else {
+    @if (pet(); as currentPet) {
+      <!-- Cabecera Persistente con Identificador Único (RNF-04) -->
+      <div class="rounded-2xl bg-surface-card p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center gap-2 text-xs text-slate-400">
+          <a routerLink="/patients" class="hover:text-pine-700 transition-colors">Mascotas</a>
+          <span>›</span>
+          <span class="font-mono text-slate-600 font-semibold">{{ currentPet.uniqueCode }}</span>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <app-patient-badge
+            [uniqueCode]="currentPet.uniqueCode"
+            [name]="currentPet.name"
+            [species]="currentPet.species"
+            [breed]="currentPet.breed"
+            [ownerName]="currentPet.client?.fullName" />
+
+          <a
+            routerLink="/patients"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 self-start md:self-auto">
+            ← Volver al listado
+          </a>
+        </div>
+      </div>
+
+      <!-- Accesos Rápidos Clínicos (Historia Clínica, Citas, Vacunación) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="clinical-quick-links">
+        <a
+          [routerLink]="['/medical-records']"
+          [queryParams]="{ petId: currentPet.id }"
+          class="group rounded-2xl bg-surface-card p-5 border border-slate-200/80 shadow-sm hover:border-pine-700 transition-all flex items-start gap-4"
+          data-testid="link-medical-records">
+          <div class="h-11 w-11 shrink-0 rounded-xl bg-emerald-50 text-pine-700 flex items-center justify-center text-xl">
+            📋
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-800 group-hover:text-pine-700 transition-colors">
+              Historia Clínica
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Consultar evoluciones médicas, diagnósticos y adjuntos.</p>
+          </div>
+        </a>
+
+        <a
+          [routerLink]="['/appointments']"
+          [queryParams]="{ petId: currentPet.id }"
+          class="group rounded-2xl bg-surface-card p-5 border border-slate-200/80 shadow-sm hover:border-pine-700 transition-all flex items-start gap-4"
+          data-testid="link-appointments">
+          <div class="h-11 w-11 shrink-0 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center text-xl">
+            📅
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-800 group-hover:text-pine-700 transition-colors">
+              Citas y Agenda
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Revisar próximas citas o programar nueva atención.</p>
+          </div>
+        </a>
+
+        <a
+          [routerLink]="['/patients', currentPet.id, 'vaccinations']"
+          class="group rounded-2xl bg-surface-card p-5 border border-slate-200/80 shadow-sm hover:border-pine-700 transition-all flex items-start gap-4"
+          data-testid="link-vaccinations">
+          <div class="h-11 w-11 shrink-0 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
+            💉
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-800 group-hover:text-pine-700 transition-colors">
+              Carné de Vacunación
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Esquema de inmunización, desparasitación y refuerzos.</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Ficha de Datos Biológicos y Propietario -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-2xl bg-surface-card p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
+            Datos Biológicos del Paciente
+          </h3>
+          <dl class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt class="text-xs text-slate-400">Código Único</dt>
+              <dd class="font-mono font-bold text-pine-700 mt-0.5" data-testid="profile-unique-code">{{ currentPet.uniqueCode }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-slate-400">Especie</dt>
+              <dd class="font-semibold text-slate-800 mt-0.5">{{ currentPet.species }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-slate-400">Raza</dt>
+              <dd class="font-semibold text-slate-800 mt-0.5">{{ currentPet.breed }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-slate-400">Sexo</dt>
+              <dd class="font-semibold text-slate-800 mt-0.5">{{ currentPet.gender }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-slate-400">Color / Pelaje</dt>
+              <dd class="font-semibold text-slate-800 mt-0.5">{{ currentPet.color }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-slate-400">Nacimiento / Edad</dt>
+              <dd class="font-semibold text-slate-800 mt-0.5">
+                {{ currentPet.birthDate || currentPet.estimatedAge || 'No registrada' }}
+              </dd>
+            </div>
+            <div class="col-span-2">
+              <dt class="text-xs text-slate-400">Microchip</dt>
+              <dd class="font-mono text-slate-800 mt-0.5">{{ currentPet.microchip || 'Sin microchip registrado' }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="rounded-2xl bg-surface-card p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
+            Propietario Responsable
+          </h3>
+          @if (currentPet.client) {
+            <dl class="space-y-3 text-sm">
+              <div>
+                <dt class="text-xs text-slate-400">Nombre Completo</dt>
+                <dd class="font-bold text-slate-800 mt-0.5">{{ currentPet.client.fullName }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-slate-400">Documento de Identidad</dt>
+                <dd class="font-mono text-slate-700 mt-0.5">{{ currentPet.client.identification }}</dd>
+              </div>
+              @if (currentPet.client.phone) {
+                <div>
+                  <dt class="text-xs text-slate-400">Teléfono de Contacto</dt>
+                  <dd class="text-slate-700 mt-0.5">{{ currentPet.client.phone }}</dd>
+                </div>
+              }
+            </dl>
+          } @else {
+            <p class="text-xs text-slate-500">ID Propietario vinculado: {{ currentPet.clientId }}</p>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
