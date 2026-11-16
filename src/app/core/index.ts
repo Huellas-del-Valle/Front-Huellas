@@ -1,5 +1,6 @@
 // Core module exports (models, services, interceptors, guards)
 export * from './models/auth.models';
+export * from './services/session.service';
 export * from './services/auth.service';
 export * from './services/security-sanitizer.service';
 export * from './interceptors/auth.interceptor';
