@@ -62,7 +62,7 @@ export class MainLayoutComponent {
     },
     {
       label: 'Mascotas',
-      path: '/pets',
+      path: '/patients',
       iconName: 'paw',
       roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA']
     },
