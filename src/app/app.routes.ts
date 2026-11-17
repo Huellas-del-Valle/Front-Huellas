@@ -65,13 +65,18 @@ export const routes: Routes = [
         data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] }
       },
       {
+        path: 'patients',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/patients/patients.routes').then(
+            (m) => m.PATIENTS_ROUTES
+          )
+      },
+      {
         path: 'pets',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] }
+        redirectTo: 'patients',
+        pathMatch: 'full'
       },
       {
         path: 'appointments',

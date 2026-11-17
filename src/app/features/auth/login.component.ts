@@ -4,6 +4,8 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { SessionService } from '../../core/services/session.service';
+import { UserRole } from '../../core/models/auth.models';
 
 interface LoginFormGroup {
   email: FormControl<string>;
@@ -20,6 +22,7 @@ interface LoginFormGroup {
 })
 export class LoginComponent {
   private readonly authService = inject(AuthService);
+  private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -104,5 +107,16 @@ export class LoginComponent {
     }
 
     this.errorMessage.set('Ocurrió un error inesperado al procesar el inicio de sesión. Intenta nuevamente.');
+  }
+
+  /** Atajo para desarrollo / pruebas locales sin backend activo */
+  loginAs(role: UserRole): void {
+    const names: Record<UserRole, string> = {
+      ADMIN: 'Dr. Roberto Mendoza',
+      VETERINARIO: 'Dra. Camila Torres',
+      RECEPCIONISTA: 'Sandra Morales'
+    };
+    this.sessionService.setMockSession(role, names[role]);
+    void this.router.navigateByUrl(this.returnUrl());
   }
 }
