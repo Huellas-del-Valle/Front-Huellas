@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, input, computed } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { PetSpecies } from '../../../features/patients/models/pet.model';
 
+// Componente transversal de identificación anti-homonimia (RNF-04)
 @Component({
   selector: 'app-patient-badge',
   standalone: true,
@@ -17,29 +18,33 @@ export class PatientBadgeComponent {
   readonly breed = input<string | undefined>(undefined);
   readonly ownerName = input<string | undefined>(undefined);
   readonly compact = input<boolean>(false);
+  readonly pillOnly = input<boolean>(false);
 
   readonly speciesConfig = computed(() => {
     switch (this.species()) {
       case 'CANINO':
         return {
-          label: 'Canino',
-          emoji: '🐕',
-          badgeClasses: 'bg-sky-50 text-sky-800 border-sky-200',
-          codeClasses: 'bg-sky-700 text-white'
+          label: 'Perro',
+          speciesText: 'Canino',
+          badgeClasses: 'bg-sky-50 text-sky-900 border-sky-200',
+          pillClasses: 'bg-[#e8f5ee] text-[#0b6b4d] border-[#bbf7d0]',
+          tagClasses: 'bg-sky-100/80 text-sky-800'
         };
       case 'FELINO':
         return {
-          label: 'Felino',
-          emoji: '🐈',
-          badgeClasses: 'bg-amber-50 text-amber-800 border-amber-200',
-          codeClasses: 'bg-amber-700 text-white'
+          label: 'Gato',
+          speciesText: 'Felino',
+          badgeClasses: 'bg-amber-50 text-amber-900 border-amber-200',
+          pillClasses: 'bg-[#e8f5ee] text-[#0b6b4d] border-[#bbf7d0]',
+          tagClasses: 'bg-amber-100/80 text-amber-800'
         };
       default:
         return {
           label: 'Otro',
-          emoji: '🐾',
-          badgeClasses: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-          codeClasses: 'bg-pine-700 text-white'
+          speciesText: 'Otro',
+          badgeClasses: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+          pillClasses: 'bg-[#e8f5ee] text-[#0b6b4d] border-[#bbf7d0]',
+          tagClasses: 'bg-emerald-100/80 text-emerald-800'
         };
     }
   });

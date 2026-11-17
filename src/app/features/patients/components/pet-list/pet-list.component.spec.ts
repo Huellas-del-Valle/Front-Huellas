@@ -56,13 +56,13 @@ describe('PetListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should render pet cards with unique codes on load', () => {
+  it('should render pet rows with unique codes on load', () => {
     expect(component.pets().length).toBe(2);
     expect(component.filteredPets().length).toBe(2);
 
     const compiled: HTMLElement = fixture.nativeElement;
-    const cards = compiled.querySelectorAll('[data-testid="pet-cards-grid"] > div');
-    expect(cards.length).toBe(2);
+    const rows = compiled.querySelectorAll('[data-testid="pet-cards-grid"] tbody tr, [data-testid="pet-row"]');
+    expect(rows.length).toBe(2);
     expect(compiled.textContent).toContain('HUV-2026-0001');
     expect(compiled.textContent).toContain('HUV-2026-0002');
   });
