@@ -16,6 +16,20 @@ export const PATIENTS_ROUTES: Routes = [
       )
   },
   {
+    path: 'vaccinations',
+    loadComponent: () =>
+      import('./components/vaccination-card/vaccination-card.component').then(
+        (m) => m.VaccinationCardComponent
+      )
+  },
+  {
+    path: ':id/vaccinations',
+    loadComponent: () =>
+      import('./components/vaccination-card/vaccination-card.component').then(
+        (m) => m.VaccinationCardComponent
+      )
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./components/pet-profile/pet-profile.component').then(
