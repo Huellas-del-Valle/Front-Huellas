@@ -79,6 +79,15 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
+        path: 'medical-records',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'VETERINARIO'] },
+        loadChildren: () =>
+          import('./features/medical-records/medical-records.routes').then(
+            (m) => m.MEDICAL_RECORDS_ROUTES
+          )
+      },
+      {
         path: 'appointments',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(
