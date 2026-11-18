@@ -1,0 +1,212 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera Principal -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-pine-700">Control de Existencias • RF-18 / RF-19</span>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">Inventario de Medicamentos e Insumos</h1>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        routerLink="/suppliers"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Directorio de Proveedores</span>
+      </a>
+
+      <button
+        type="button"
+        (click)="openCreateProduct()"
+        class="inline-flex items-center gap-2 rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-pine-800 transition-colors"
+        data-testid="open-create-product-btn">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Nuevo Producto</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel de Alertas y KPIs (< 1s) -->
+  <app-inventory-alerts [alerts]="alerts()" [outOfStockCount]="outOfStockCount()" />
+
+  @if (feedbackMessage()) {
+    <div class="rounded-xl bg-[#e8f5ee] border border-[#bbf7d0] px-4 py-3 flex items-center justify-between text-xs font-medium text-pine-800" role="status">
+      <span>{{ feedbackMessage() }}</span>
+      <button type="button" (click)="feedbackMessage.set(null)" class="font-bold text-pine-700">✕</button>
+    </div>
+  }
+
+  <!-- Tarjeta Contenedora del Catálogo -->
+  <div class="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-5">
+    <!-- Buscador y Filtros -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="md:col-span-1">
+        <label for="invSearch" class="sr-only">Buscar producto</label>
+        <input
+          id="invSearch"
+          type="search"
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Buscar por nombre, SKU o lote..."
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none"
+          data-testid="inventory-search-input" />
+      </div>
+
+      <div>
+        <select
+          [value]="categoryFilter()"
+          (change)="categoryFilter.set($any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none"
+          data-testid="inventory-category-filter">
+          <option value="ALL">Todas las categorías</option>
+          <option value="MEDICAMENTO">Medicamentos</option>
+          <option value="INSUMO">Insumos Clínicos</option>
+          <option value="BIOLOGICO">Biológicos / Vacunas</option>
+          <option value="ALIMENTO">Alimentos</option>
+        </select>
+      </div>
+
+      <div>
+        <select
+          [value]="supplierFilter()"
+          (change)="supplierFilter.set($any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none">
+          <option value="ALL">Todos los proveedores</option>
+          @for (sup of suppliers(); track sup.id) {
+            <option [value]="sup.id">{{ sup.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <select
+          [value]="severityFilter()"
+          (change)="severityFilter.set($any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none"
+          data-testid="inventory-severity-filter">
+          <option value="ALL">Nivel de existencias: Todos</option>
+          <option value="CRITICAL">Crítico (Agotado / Vencido)</option>
+          <option value="WARNING">Stock Mínimo (Alerta Naranja)</option>
+          <option value="NORMAL">Stock Óptimo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabla de Productos -->
+    @if (isLoading()) {
+      <p class="py-10 text-center text-sm text-slate-500">Cargando catálogo de productos...</p>
+    } @else if (errorMessage()) {
+      <div class="rounded-xl bg-red-50 border border-red-200 p-6 text-center space-y-2">
+        <p class="text-xs font-medium text-red-700">{{ errorMessage() }}</p>
+        <button type="button" (click)="loadInventoryData()" class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white">Reintentar</button>
+      </div>
+    } @else if (filteredProducts().length === 0) {
+      <div class="rounded-xl bg-slate-50 border border-slate-100 p-8 text-center">
+        <p class="text-sm font-bold text-slate-700">No se encontraron productos</p>
+        <p class="text-xs text-slate-500 mt-1">Ajuste los filtros de búsqueda o registre un nuevo insumo.</p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto border-t border-slate-100">
+        <table class="w-full text-left border-collapse" data-testid="inventory-products-table">
+          <thead>
+            <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <th class="py-3.5 px-3">SKU</th>
+              <th class="py-3.5 px-3">Producto / Categoría</th>
+              <th class="py-3.5 px-3">Proveedor</th>
+              <th class="py-3.5 px-3">Existencias / Mín.</th>
+              <th class="py-3.5 px-3">Lote / Vencimiento</th>
+              <th class="py-3.5 px-3">Estado Alerta</th>
+              <th class="py-3.5 px-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm">
+            @for (prod of filteredProducts(); track prod.id) {
+              @let alertEval = getRowAlert(prod);
+              <tr
+                class="transition-colors"
+                [ngClass]="{
+                  'bg-amber-50/75 hover:bg-amber-100/70': alertEval.severity === 'WARNING',
+                  'bg-red-50/75 hover:bg-red-100/70': alertEval.severity === 'CRITICAL',
+                  'hover:bg-slate-50/80': alertEval.severity === 'NORMAL'
+                }"
+                [attr.data-severity]="alertEval.severity">
+                <td class="py-3.5 px-3 font-mono text-xs font-semibold text-slate-600 whitespace-nowrap">
+                  {{ prod.sku }}
+                </td>
+
+                <td class="py-3.5 px-3">
+                  <p class="font-bold text-slate-800">{{ prod.name }}</p>
+                  <p class="text-[11px] font-medium text-slate-500">{{ prod.category }} • ${{ prod.unitPrice | number:'1.0-0' }}</p>
+                </td>
+
+                <td class="py-3.5 px-3 text-xs text-slate-600">
+                  {{ getSupplierLabel(prod) }}
+                </td>
+
+                <td class="py-3.5 px-3 whitespace-nowrap">
+                  <span class="font-bold text-slate-900">{{ prod.currentStock }}</span>
+                  <span class="text-xs text-slate-400"> / mín. {{ prod.minStock }}</span>
+                </td>
+
+                <td class="py-3.5 px-3 whitespace-nowrap text-xs">
+                  @if (prod.batchNumber) {
+                    <span class="font-mono font-semibold text-slate-700">{{ prod.batchNumber }}</span>
+                  } @else {
+                    <span class="text-slate-400">—</span>
+                  }
+                  @if (prod.expirationDate) {
+                    <p class="text-[11px] text-slate-500">Vence: {{ prod.expirationDate }}</p>
+                  }
+                </td>
+
+                <td class="py-3.5 px-3 whitespace-nowrap">
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border-emerald-200': alertEval.severity === 'NORMAL',
+                      'bg-amber-100 text-amber-800 border-amber-300': alertEval.severity === 'WARNING',
+                      'bg-red-100 text-red-800 border-red-300': alertEval.severity === 'CRITICAL'
+                    }">
+                    {{ alertEval.label }}
+                  </span>
+                </td>
+
+                <td class="py-3.5 px-3 whitespace-nowrap text-right space-x-1.5">
+                  <button
+                    type="button"
+                    (click)="openMovementModal(prod)"
+                    class="rounded-lg bg-pine-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-pine-800 transition-colors"
+                    data-testid="row-movement-btn">
+                    Movimiento
+                  </button>
+                  <button
+                    type="button"
+                    (click)="openEditProduct(prod)"
+                    class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Modales -->
+  @if (isProductModalOpen()) {
+    <app-product-form-dialog
+      [product]="editingProduct()"
+      [suppliers]="suppliers()"
+      (saved)="onProductSaved($event)"
+      (closed)="closeProductModal()" />
+  }
+
+  @if (movementTargetProduct(); as selectedProd) {
+    <app-product-movement-dialog
+      [product]="selectedProd"
+      (moved)="onMovementRegistered($event)"
+      (closed)="closeMovementModal()" />
+  }
+</div>

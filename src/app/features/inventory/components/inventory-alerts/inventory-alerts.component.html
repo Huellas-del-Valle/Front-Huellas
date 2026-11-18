@@ -1,0 +1,63 @@
+<section class="space-y-4" aria-label="Resumen de alertas de inventario" data-testid="inventory-alerts-panel">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- KPI 1: Stock Mínimo Crítico -->
+    <div class="rounded-2xl bg-white p-5 border border-amber-200/80 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-amber-700">Stock Mínimo Crítico</p>
+        <p class="text-2xl font-extrabold text-slate-900 mt-1" data-testid="kpi-low-stock">
+          {{ alerts()?.summary?.totalLowStock ?? 0 }}
+        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">Productos en umbral de reposición</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- KPI 2: Existencias Agotadas -->
+    <div class="rounded-2xl bg-white p-5 border border-red-200/80 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-red-700">Existencias Agotadas</p>
+        <p class="text-2xl font-extrabold text-slate-900 mt-1" data-testid="kpi-out-of-stock">
+          {{ outOfStockCount() }}
+        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">Referencias con 0 unidades disponibles</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- KPI 3: Vencimiento < 30 días -->
+    <div class="rounded-2xl bg-white p-5 border border-rose-200/80 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-rose-700">Vencimiento &lt; 30 Días</p>
+        <p class="text-2xl font-extrabold text-slate-900 mt-1" data-testid="kpi-near-expiration">
+          {{ alerts()?.summary?.totalNearExpiration ?? 0 }}
+        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">Lotes próximos a expirar</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner de Lotes Próximos a Vencer (si existen) -->
+  @if ((alerts()?.nearExpiration?.length ?? 0) > 0) {
+    <div class="rounded-xl bg-amber-50/80 border border-amber-200 px-4 py-3 flex flex-wrap items-center gap-2 text-xs text-amber-900">
+      <span class="font-bold">Atención de caducidad:</span>
+      @for (exp of alerts()!.nearExpiration; track exp.productId) {
+        <span class="inline-flex items-center gap-1 rounded-full bg-white border border-amber-300 px-2.5 py-0.5 font-medium">
+          {{ exp.name }} ({{ exp.batchNumber }} • {{ exp.daysLeft }}d)
+        </span>
+      }
+    </div>
+  }
+</section>
