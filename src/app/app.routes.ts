@@ -98,21 +98,21 @@ export const routes: Routes = [
       },
       {
         path: 'inventory',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RECEPCIONISTA'] }
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/inventory/inventory.routes').then(
+            (m) => m.INVENTORY_ROUTES
+          )
       },
       {
         path: 'suppliers',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RECEPCIONISTA'] }
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/inventory/suppliers.routes').then(
+            (m) => m.SUPPLIERS_ROUTES
+          )
       },
       {
         path: 'cash',
