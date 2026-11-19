@@ -115,13 +115,21 @@ export const routes: Routes = [
         data: { roles: ['ADMIN', 'RECEPCIONISTA'] }
       },
       {
+        path: 'billing',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/billing/billing.routes').then((m) => m.BILLING_ROUTES)
+      },
+      {
         path: 'cash',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RECEPCIONISTA'] }
+        redirectTo: 'billing/cash-register',
+        pathMatch: 'full'
+      },
+      {
+        path: 'cash-register',
+        redirectTo: 'billing/cash-register',
+        pathMatch: 'full'
       },
       {
         path: 'reports',
