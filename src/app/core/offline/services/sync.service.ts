@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, untracked } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -31,9 +31,12 @@ export class SyncService {
 
     effect(() => {
       const online = this.networkStatus.isOnline();
-      const count = this.pendingCount();
-      if (online && count > 0 && !this.isSyncing()) {
-        void this.syncPendingQueue();
+      if (online) {
+        const hasPending = untracked(() => this.pendingCount() > 0);
+        const busy = untracked(() => this.isSyncing());
+        if (hasPending && !busy) {
+          void this.syncPendingQueue();
+        }
       }
     });
   }
