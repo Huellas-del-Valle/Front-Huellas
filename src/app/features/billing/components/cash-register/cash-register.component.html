@@ -1,0 +1,252 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-pine-700">Control de Tesorería • RF-24 / CU17</span>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">Gestión de Caja y Arqueo Diario</h1>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        routerLink="/billing"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Ir a Terminal POS</span>
+      </a>
+
+      <a
+        routerLink="/billing/credits"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Cartera de Créditos</span>
+      </a>
+    </div>
+  </div>
+
+  @if (feedbackMessage()) {
+    <div class="rounded-xl bg-[#e8f5ee] border border-[#bbf7d0] px-4 py-3 flex items-center justify-between text-xs font-medium text-pine-800" role="status">
+      <span>{{ feedbackMessage() }}</span>
+      <button type="button" (click)="feedbackMessage.set(null)" class="font-bold text-pine-700">✕</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-medium text-red-700" role="alert">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- ESTADO 1: CAJA CERRADA -> FORMULARIO DE APERTURA -->
+  @if (!cashService.isRegisterOpen()) {
+    <div class="max-w-lg mx-auto rounded-2xl bg-white p-8 border border-slate-200 shadow-sm space-y-5" data-testid="cash-open-card">
+      <div class="space-y-1">
+        <span class="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+          Turno Cerrado
+        </span>
+        <h2 class="text-lg font-bold text-slate-900">Apertura de Caja Diaria</h2>
+        <p class="text-xs text-slate-500">
+          Debe abrir el turno con un monto base antes de emitir facturas en el punto de venta (POS).
+        </p>
+      </div>
+
+      <form [formGroup]="openForm" (ngSubmit)="onOpenRegister()" class="space-y-4">
+        <div>
+          <label for="openingAmount" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+            Fondo Base Inicial (COP $) *
+          </label>
+          <input
+            id="openingAmount"
+            type="number"
+            min="0"
+            formControlName="openingAmount"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-base font-bold text-slate-900 focus:bg-white focus:border-pine-700 focus:outline-none"
+            data-testid="opening-amount-input" />
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="openForm.invalid || isSubmitting()"
+          class="w-full rounded-xl bg-pine-700 px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-pine-800 disabled:opacity-50 transition-colors"
+          data-testid="open-register-btn">
+          {{ isSubmitting() ? 'Abriendo turno...' : 'Abrir Turno de Caja' }}
+        </button>
+      </form>
+    </div>
+  } @else {
+    <!-- ESTADO 2: CAJA ABIERTA -> KPIs, MOVIMIENTOS MENORES Y CIERRE -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="cash-open-dashboard">
+      <div class="rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Fondo Base</p>
+        <p class="text-xl font-extrabold text-slate-900 mt-1">${{ (cashService.currentSession()?.openingAmount ?? 0) | number:'1.0-0' }}</p>
+      </div>
+
+      <div class="rounded-2xl bg-white p-5 border border-emerald-200/80 shadow-xs">
+        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Ingresos Menores</p>
+        <p class="text-xl font-extrabold text-emerald-700 mt-1">+${{ totalIngresos() | number:'1.0-0' }}</p>
+      </div>
+
+      <div class="rounded-2xl bg-white p-5 border border-rose-200/80 shadow-xs">
+        <p class="text-xs font-bold uppercase tracking-wider text-rose-700">Egresos Menores</p>
+        <p class="text-xl font-extrabold text-rose-700 mt-1">-${{ totalEgresos() | number:'1.0-0' }}</p>
+      </div>
+
+      <div class="rounded-2xl bg-[#e8f5ee] p-5 border border-pine-200 shadow-xs">
+        <p class="text-xs font-bold uppercase tracking-wider text-pine-800">Efectivo Esperado</p>
+        <p class="text-xl font-extrabold text-pine-900 mt-1" data-testid="expected-cash-value">${{ expectedCash() | number:'1.0-0' }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Formulario de Movimiento Menor -->
+      <div class="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-800">Registrar Movimiento Menor</h2>
+        <form [formGroup]="movementForm" (ngSubmit)="onAddMovement()" class="space-y-3.5">
+          <div>
+            <label for="cashMovType" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Tipo *</label>
+            <select id="cashMovType" formControlName="type"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none">
+              <option value="INGRESO">Ingreso de Efectivo</option>
+              <option value="EGRESO">Egreso / Gasto Menor</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="cashMovAmount" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Monto ($) *</label>
+            <input id="cashMovAmount" type="number" min="1" formControlName="amount"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+          </div>
+
+          <div>
+            <label for="cashMovDesc" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Concepto *</label>
+            <input id="cashMovDesc" type="text" formControlName="description" placeholder="Ej: Compra papelería o ingreso cambio"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+          </div>
+
+          <button type="submit" [disabled]="movementForm.invalid || isSubmitting()"
+            class="w-full rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800 disabled:opacity-50">
+            Registrar Movimiento
+          </button>
+        </form>
+      </div>
+
+      <!-- Listado de Movimientos y Botón de Cierre -->
+      <div class="lg:col-span-2 rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-800">Movimientos Menores del Turno</h2>
+            <button
+              type="button"
+              (click)="openClosingModal()"
+              class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+              data-testid="open-closing-modal-btn">
+              Cerrar Caja y Realizar Arqueo
+            </button>
+          </div>
+
+          @if (minorMovements().length === 0) {
+            <p class="py-8 text-center text-xs text-slate-500">No se han registrado ingresos ni egresos menores en este turno.</p>
+          } @else {
+            <div class="overflow-x-auto border-t border-slate-100">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th class="py-3 px-2">Tipo</th>
+                    <th class="py-3 px-2">Concepto</th>
+                    <th class="py-3 px-2 text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-xs">
+                  @for (mov of minorMovements(); track mov.id) {
+                    <tr>
+                      <td class="py-3 px-2">
+                        <span class="rounded-full px-2.5 py-0.5 font-semibold"
+                          [ngClass]="mov.type === 'INGRESO' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
+                          {{ mov.type }}
+                        </span>
+                      </td>
+                      <td class="py-3 px-2 font-medium text-slate-700">{{ mov.description }}</td>
+                      <td class="py-3 px-2 text-right font-bold"
+                        [ngClass]="mov.type === 'INGRESO' ? 'text-emerald-700' : 'text-rose-700'">
+                        {{ mov.type === 'INGRESO' ? '+' : '-' }}${{ mov.amount | number:'1.0-0' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DE ARQUEO FÍSICO POR DENOMINACIONES -->
+  @if (isClosingModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true" data-testid="cash-closing-modal">
+      <div class="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Arqueo Físico y Cierre de Caja</h2>
+            <p class="text-xs text-slate-500">Conteo por denominaciones (CU17 • RNF-03)</p>
+          </div>
+          <button type="button" (click)="isClosingModalOpen.set(false)" class="text-slate-400 hover:text-slate-700">✕</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-5">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            @for (denom of denominations; track denom) {
+              <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-2.5">
+                <label [for]="'denom-' + denom" class="block text-[11px] font-bold text-slate-600 mb-1">
+                  ${{ denom | number:'1.0-0' }}
+                </label>
+                <input
+                  [id]="'denom-' + denom"
+                  type="number"
+                  min="0"
+                  [value]="denominationCounts()[denom] || 0"
+                  (input)="updateDenomination(denom, $any($event.target).value)"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-800 focus:border-pine-700 focus:outline-none" />
+              </div>
+            }
+          </div>
+
+          <!-- Resumen de Cuadre / Discrepancia -->
+          @let summary = closingEvaluation();
+          <div class="rounded-xl border p-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
+            [ngClass]="summary.isBalanced ? 'bg-emerald-50/70 border-emerald-200' : 'bg-amber-50/80 border-amber-300'">
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-500">Esperado en Sistema</p>
+              <p class="text-base font-extrabold text-slate-900">${{ summary.expectedCash | number:'1.0-0' }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-500">Conteo Físico</p>
+              <p class="text-base font-extrabold text-pine-800" data-testid="physical-count-total">${{ summary.physicalCount | number:'1.0-0' }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase text-slate-500">Diferencia / Descuadre</p>
+              <p class="text-base font-extrabold"
+                [ngClass]="summary.difference === 0 ? 'text-emerald-700' : 'text-red-700'"
+                data-testid="closing-difference-value">
+                {{ summary.difference > 0 ? '+' : '' }}${{ summary.difference | number:'1.0-0' }}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label for="closingNotes" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Observaciones de Cierre</label>
+            <input id="closingNotes" type="text" [value]="closingNotes()" (input)="closingNotes.set($any($event.target).value)"
+              placeholder="Justificación en caso de sobrante o faltante..."
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <button type="button" (click)="isClosingModalOpen.set(false)" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700">Cancelar</button>
+          <button type="button" (click)="onConfirmClose()" [disabled]="isSubmitting()"
+            class="rounded-xl bg-pine-700 px-5 py-2 text-xs font-semibold text-white hover:bg-pine-800 disabled:opacity-50"
+            data-testid="confirm-close-register-btn">
+            {{ isSubmitting() ? 'Cerrando...' : 'Confirmar Arqueo y Cerrar Turno' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
