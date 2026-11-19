@@ -1,0 +1,42 @@
+name: Front-Huellas CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Lint, Build & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies cleanly
+        run: npm ci
+
+      - name: Run static analysis and linter
+        run: npm run lint
+
+      - name: Build production bundle
+        run: npm run build -- --configuration=production
+
+      - name: Run unit tests (Vitest)
+        run: npm test -- --watch=false

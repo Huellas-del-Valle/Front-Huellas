@@ -1,0 +1,56 @@
+@if (networkStatus.isOffline()) {
+  <div
+    class="w-full bg-amber-600 text-white px-4 py-2.5 shadow-sm border-b border-amber-700"
+    role="status"
+    aria-live="polite"
+    data-testid="offline-contingency-banner">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+        </svg>
+        <p class="font-semibold">
+          Modo Contingencia Sin Conexión:
+          <span class="font-normal">
+            Las operaciones se están guardando localmente en IndexedDB y se sincronizarán automáticamente al restablecer internet.
+          </span>
+        </p>
+      </div>
+
+      <span
+        class="inline-flex items-center rounded-full bg-amber-900/50 border border-amber-300/40 px-3 py-0.5 font-mono text-[11px] font-bold"
+        data-testid="offline-pending-count">
+        En cola: {{ syncService.pendingCount() }}
+      </span>
+    </div>
+  </div>
+} @else if (syncService.isSyncing() || syncService.pendingCount() > 0) {
+  <div
+    class="w-full bg-pine-800 text-white px-4 py-2 shadow-sm border-b border-pine-900"
+    role="status"
+    aria-live="polite"
+    data-testid="sync-progress-banner">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="font-semibold">
+          {{ syncService.isSyncing()
+            ? 'Sincronizando registros pendientes con el servidor...'
+            : 'Conexión restablecida. Registros pendientes por sincronizar: ' + syncService.pendingCount() }}
+        </span>
+      </div>
+
+      @if (!syncService.isSyncing()) {
+        <button
+          type="button"
+          (click)="triggerManualSync()"
+          class="rounded-lg bg-white/15 hover:bg-white/25 px-3 py-1 text-[11px] font-bold transition-colors"
+          data-testid="manual-sync-btn">
+          Sincronizar Ahora
+        </button>
+      }
+    </div>
+  </div>
+}
