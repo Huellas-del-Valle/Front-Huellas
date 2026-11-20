@@ -1,0 +1,196 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-pine-700">Cuentas por Cobrar • RF-23 / CU16</span>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">Cartera de Créditos y Abonos</h1>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        routerLink="/billing"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Terminal POS</span>
+      </a>
+
+      <a
+        routerLink="/billing/cash-register"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Arqueo y Caja</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Comprobante de Abono Generado -->
+  @if (lastReceipt(); as receipt) {
+    <div class="rounded-2xl bg-white p-6 border-2 border-pine-600 shadow-sm space-y-3" data-testid="credit-payment-receipt">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div>
+          <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+            Comprobante de Abono Oficial
+          </span>
+          <h2 class="text-base font-bold text-slate-900 mt-1">Recibo #{{ receipt.paymentId }}</h2>
+          <p class="text-xs text-slate-500">Medio: {{ receipt.method }} • Fecha: {{ receipt.paidAt }}</p>
+        </div>
+
+        <div class="flex items-center gap-2 print:hidden">
+          <button type="button" (click)="printReceipt()" class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800">
+            Imprimir Comprobante
+          </button>
+          <button type="button" (click)="lastReceipt.set(null)" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600">
+            Cerrar
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 text-xs">
+        <div>
+          <span class="text-slate-500">Valor Abonado:</span>
+          <p class="text-base font-extrabold text-emerald-700">${{ receipt.amountPaid | number:'1.0-0' }}</p>
+        </div>
+        <div>
+          <span class="text-slate-500">Nuevo Saldo Pendiente:</span>
+          <p class="text-base font-extrabold text-slate-900">${{ receipt.newBalance | number:'1.0-0' }}</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- KPI Saldo Total en Cartera -->
+  <div class="rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs flex items-center justify-between max-w-sm">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Saldo Total en Cartera</p>
+      <p class="text-2xl font-extrabold text-slate-900 mt-1" data-testid="total-portfolio-balance">
+        ${{ totalPortfolioBalance() | number:'1.0-0' }}
+      </p>
+    </div>
+    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f5ee] text-pine-700">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Tabla de Cuentas a Crédito -->
+  <div class="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-4 print:hidden">
+    <div class="max-w-md">
+      <input
+        type="search"
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
+        placeholder="Buscar por cliente, documento o factura..."
+        class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+    </div>
+
+    @if (isLoading()) {
+      <p class="py-10 text-center text-sm text-slate-500">Cargando cartera de créditos...</p>
+    } @else if (filteredCredits().length === 0) {
+      <div class="rounded-xl bg-slate-50 border border-slate-100 p-8 text-center">
+        <p class="text-sm font-bold text-slate-700">Sin cuentas pendientes en cartera</p>
+        <p class="text-xs text-slate-500 mt-1">Todas las facturas a crédito están al día.</p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto border-t border-slate-100">
+        <table class="w-full text-left border-collapse" data-testid="credits-table">
+          <thead>
+            <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <th class="py-3.5 px-3">Factura</th>
+              <th class="py-3.5 px-3">Cliente / Documento</th>
+              <th class="py-3.5 px-3">Vencimiento</th>
+              <th class="py-3.5 px-3 text-right">Total Crédito</th>
+              <th class="py-3.5 px-3 text-right">Abonado</th>
+              <th class="py-3.5 px-3 text-right">Saldo Pendiente</th>
+              <th class="py-3.5 px-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm">
+            @for (cred of filteredCredits(); track cred.id) {
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3.5 px-3 font-mono text-xs font-bold text-slate-700 whitespace-nowrap">{{ cred.invoiceNumber }}</td>
+                <td class="py-3.5 px-3">
+                  <p class="font-bold text-slate-800">{{ cred.clientName }}</p>
+                  <p class="text-[11px] text-slate-500">CC {{ cred.clientDocument }}</p>
+                </td>
+                <td class="py-3.5 px-3 text-xs text-slate-600 whitespace-nowrap">{{ cred.dueDate }}</td>
+                <td class="py-3.5 px-3 text-right text-xs font-semibold text-slate-700 whitespace-nowrap">${{ cred.totalAmount | number:'1.0-0' }}</td>
+                <td class="py-3.5 px-3 text-right text-xs font-semibold text-emerald-700 whitespace-nowrap">${{ cred.paidAmount | number:'1.0-0' }}</td>
+                <td class="py-3.5 px-3 text-right font-extrabold whitespace-nowrap"
+                  [ngClass]="cred.balance > 0 ? 'text-amber-700' : 'text-emerald-700'"
+                  data-testid="credit-row-balance">
+                  ${{ cred.balance | number:'1.0-0' }}
+                </td>
+                <td class="py-3.5 px-3 text-right whitespace-nowrap">
+                  @if (cred.balance > 0) {
+                    <button
+                      type="button"
+                      (click)="openPaymentDialog(cred)"
+                      class="rounded-lg bg-pine-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-pine-800 transition-colors"
+                      data-testid="open-credit-payment-btn">
+                      Registrar Abono
+                    </button>
+                  } @else {
+                    <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">Saldado</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- MODAL DE ABONO PARCIAL -->
+  @if (selectedCredit(); as cred) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true" data-testid="credit-payment-modal">
+      <div class="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Registrar Abono a Crédito</h2>
+            <p class="text-xs text-slate-500">{{ cred.invoiceNumber }} • Saldo pendiente: <span class="font-bold text-slate-800">${{ cred.balance | number:'1.0-0' }}</span></p>
+          </div>
+          <button type="button" (click)="closePaymentDialog()" class="text-slate-400 hover:text-slate-700">✕</button>
+        </div>
+
+        <form [formGroup]="paymentForm" (ngSubmit)="onSubmitPayment()" class="p-6 space-y-4">
+          <div>
+            <label for="abonoAmount" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Valor del Abono ($) *</label>
+            <input id="abonoAmount" type="number" min="1" formControlName="amount"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm font-bold text-slate-900 focus:bg-white focus:border-pine-700 focus:outline-none"
+              data-testid="abono-amount-input" />
+            @if (exceedsBalance()) {
+              <p class="mt-1 text-xs font-medium text-red-600" data-testid="abono-exceeds-error">
+                El abono no puede superar el saldo pendiente (${{ cred.balance | number:'1.0-0' }}).
+              </p>
+            }
+          </div>
+
+          <div>
+            <label for="abonoMethod" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Medio de Pago *</label>
+            <select id="abonoMethod" formControlName="method"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none">
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TARJETA">Tarjeta Débito/Crédito</option>
+              <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+            </select>
+          </div>
+
+          @if (submitError()) {
+            <div class="rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-medium text-red-700" role="alert">
+              {{ submitError() }}
+            </div>
+          }
+
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <button type="button" (click)="closePaymentDialog()" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Cancelar</button>
+            <button type="submit" [disabled]="paymentForm.invalid || exceedsBalance() || isSubmitting()"
+              class="rounded-xl bg-pine-700 px-5 py-2 text-xs font-semibold text-white hover:bg-pine-800 disabled:opacity-50"
+              data-testid="confirm-abono-btn">
+              {{ isSubmitting() ? 'Registrando...' : 'Confirmar Abono' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

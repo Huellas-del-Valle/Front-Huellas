@@ -1,0 +1,282 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera Principal -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-pine-700">Facturación y Caja • RF-21 / RF-22</span>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">Terminal Punto de Venta (POS)</h1>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        routerLink="/billing/credits"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Cartera de Créditos</span>
+      </a>
+
+      <a
+        routerLink="/billing/cash-register"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors">
+        <span>Arqueo y Control de Caja</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- BLOQUEO OBLIGATORIO SI LA CAJA ESTÁ CERRADA -->
+  @if (!cashService.isRegisterOpen()) {
+    <div class="rounded-2xl bg-amber-50 border border-amber-300 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" role="alert" data-testid="pos-register-closed-banner">
+      <div class="space-y-1">
+        <p class="text-sm font-bold text-amber-900">Terminal POS Bloqueado — Caja del Turno Cerrada</p>
+        <p class="text-xs text-amber-800">
+          Para emitir facturas y registrar cobros, primero debe realizar la apertura de caja con el fondo base inicial (CU15 / CU17).
+        </p>
+      </div>
+      <a
+        routerLink="/billing/cash-register"
+        class="shrink-0 rounded-xl bg-pine-700 px-5 py-2.5 text-xs font-semibold text-white hover:bg-pine-800 transition-colors">
+        Ir a Abrir Caja
+      </a>
+    </div>
+  }
+
+  <!-- COMPROBANTE FISCAL GENERADO (VISTA PDF) -->
+  @if (issuedInvoice(); as inv) {
+    <div class="rounded-2xl bg-white p-6 border-2 border-pine-600 shadow-md space-y-4" data-testid="issued-invoice-receipt">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div>
+          <span class="rounded-full bg-emerald-50 px-3 py-0.5 text-[11px] font-bold text-emerald-700">
+            Factura Emitida • {{ inv.status }}
+          </span>
+          <h2 class="text-lg font-bold text-slate-900 mt-1">Comprobante {{ inv.invoiceNumber }}</h2>
+          <p class="text-xs text-slate-500">Emitida por: {{ inv.issuedBy.fullName }} • {{ inv.createdAt }}</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 print:hidden">
+          <button
+            type="button"
+            (click)="downloadOrPrintInvoicePdf(inv)"
+            class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800"
+            data-testid="download-invoice-pdf-btn">
+            Descargar / Imprimir Comprobante PDF
+          </button>
+          <button
+            type="button"
+            (click)="issuedInvoice.set(null)"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600">
+            Cerrar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-sm">
+        <span class="font-medium text-slate-600">Total Facturado:</span>
+        <span class="text-xl font-extrabold text-slate-900">${{ inv.total | number:'1.0-0' }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- GRID PRINCIPAL DEL POS: CATÁLOGO IZQUIERDA + CARRITO DERECHA -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 print:hidden" [class.opacity-60]="!cashService.isRegisterOpen()">
+    <!-- Catálogo de Servicios y Productos -->
+    <div class="lg:col-span-7 rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 class="text-base font-bold text-slate-800">Catálogo de Servicios y Productos</h2>
+        <input
+          type="search"
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Buscar consulta, vacuna o insumo..."
+          class="w-full sm:w-64 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @for (item of filteredCatalog(); track item.id) {
+          <div class="rounded-xl border border-slate-200/80 p-4 flex flex-col justify-between gap-3 hover:border-pine-600 transition-colors">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-[11px] font-bold text-slate-400">{{ item.code }}</span>
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                  [ngClass]="item.category === 'SERVICIO' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-800'">
+                  {{ item.category }}
+                </span>
+              </div>
+              <p class="font-bold text-sm text-slate-800 mt-1">{{ item.name }}</p>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div>
+                <span class="text-sm font-extrabold text-slate-900">${{ item.unitPrice | number:'1.0-0' }}</span>
+                @if (item.taxRate > 0) {
+                  <span class="text-[10px] text-slate-400 ml-1">+IVA 19%</span>
+                }
+              </div>
+              <button
+                type="button"
+                (click)="addToCart(item)"
+                [disabled]="!cashService.isRegisterOpen()"
+                class="rounded-lg bg-[#e8f5ee] px-3 py-1.5 text-xs font-bold text-pine-700 hover:bg-pine-700 hover:text-white disabled:opacity-40 transition-colors"
+                data-testid="add-to-cart-btn">
+                + Agregar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Carrito de Facturación y Totales -->
+    <div class="lg:col-span-5 rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-5">
+      <div class="space-y-4">
+        <h2 class="text-base font-bold text-slate-800">Orden de Venta Actual</h2>
+
+        <!-- Selector de Cliente -->
+        <div>
+          <label for="posClient" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Cliente / Propietario *</label>
+          <select id="posClient" [value]="selectedClientId()" (change)="selectedClientId.set($any($event.target).value)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none">
+            @for (cli of clients(); track cli.id) {
+              <option [value]="cli.id">{{ cli.fullName }} (CC {{ cli.documentNumber }})</option>
+            }
+          </select>
+        </div>
+
+        <!-- Líneas del Carrito -->
+        @if (cartLines().length === 0) {
+          <div class="rounded-xl bg-slate-50 border border-slate-100 py-10 px-4 text-center">
+            <p class="text-xs font-semibold text-slate-600">El carrito de venta está vacío</p>
+            <p class="text-[11px] text-slate-400 mt-1">Seleccione servicios clínicos o insumos del catálogo.</p>
+          </div>
+        } @else {
+          <div class="divide-y divide-slate-100 border-t border-b border-slate-100 max-h-64 overflow-y-auto">
+            @for (line of cartLines(); track line.item.id) {
+              <div class="py-3 flex items-center justify-between gap-2 text-xs">
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold text-slate-800 truncate">{{ line.item.name }}</p>
+                  <p class="text-slate-500">${{ line.item.unitPrice | number:'1.0-0' }} c/u</p>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="updateQuantity(line.item.id, -1)" class="h-6 w-6 rounded-md border border-slate-200 font-bold text-slate-600 hover:bg-slate-100">-</button>
+                  <span class="w-6 text-center font-bold text-slate-800">{{ line.quantity }}</span>
+                  <button type="button" (click)="updateQuantity(line.item.id, 1)" class="h-6 w-6 rounded-md border border-slate-200 font-bold text-slate-600 hover:bg-slate-100">+</button>
+                </div>
+
+                <span class="font-bold text-slate-900 w-20 text-right">
+                  ${{ (line.item.unitPrice * line.quantity) | number:'1.0-0' }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Resumen Aritmético y Botón de Cobro -->
+      <div class="space-y-4 pt-2">
+        @let t = totals();
+        <div class="space-y-1.5 text-xs">
+          <div class="flex justify-between text-slate-500">
+            <span>Subtotal Base:</span>
+            <span class="font-semibold text-slate-700" data-testid="cart-subtotal">${{ t.subtotal | number:'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between text-slate-500">
+            <span>Impuestos (IVA):</span>
+            <span class="font-semibold text-slate-700" data-testid="cart-tax">${{ t.taxTotal | number:'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-100">
+            <span>Total a Cobrar:</span>
+            <span class="text-pine-800" data-testid="cart-grand-total">${{ t.grandTotal | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="openPaymentModal()"
+          [disabled]="!cashService.isRegisterOpen() || cartLines().length === 0"
+          class="w-full rounded-xl bg-pine-700 px-5 py-3 text-xs font-bold text-white shadow-xs hover:bg-pine-800 disabled:opacity-50 transition-colors"
+          data-testid="proceed-to-payment-btn">
+          Procesar Cobro Multiformato
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE COBRO MULTIFORMATO / PAGOS MIXTOS -->
+  @if (isPaymentModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true" data-testid="multi-payment-modal">
+      <div class="w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Cobro Multiformato (CU15)</h2>
+            <p class="text-xs text-slate-500">Total de la orden: <span class="font-bold text-slate-900">${{ totals().grandTotal | number:'1.0-0' }}</span></p>
+          </div>
+          <button type="button" (click)="isPaymentModalOpen.set(false)" class="text-slate-400 hover:text-slate-700">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="space-y-3">
+            @for (split of paymentSplits(); track $index) {
+              <div class="grid grid-cols-12 gap-2 items-center">
+                <div class="col-span-5">
+                  <select [value]="split.method" (change)="updatePaymentMethod($index, $any($event.target).value)"
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800">
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta Débito/Crédito</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                  </select>
+                </div>
+                <div class="col-span-5">
+                  <input type="number" min="0" [value]="split.amount" (input)="updatePaymentAmount($index, $any($event.target).value)"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900"
+                    data-testid="payment-split-amount" />
+                </div>
+                <div class="col-span-2 text-right">
+                  @if (paymentSplits().length > 1) {
+                    <button type="button" (click)="removePaymentSplit($index)" class="text-xs font-bold text-red-600 hover:underline">Quitar</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <button type="button" (click)="addPaymentSplit()"
+            class="text-xs font-bold text-pine-700 hover:underline">
+            + Agregar otro medio de pago (Pago Mixto)
+          </button>
+
+          <!-- Validación de Cobertura -->
+          @let cov = coverage();
+          <div class="rounded-xl p-3.5 border text-xs space-y-1"
+            [ngClass]="cov.isCovered ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-800'">
+            <div class="flex justify-between font-bold">
+              <span>Total Cubierto:</span>
+              <span>${{ cov.totalPaid | number:'1.0-0' }}</span>
+            </div>
+            @if (!cov.isCovered) {
+              <p class="font-semibold" data-testid="payment-remaining-warning">
+                Faltan ${{ cov.remaining | number:'1.0-0' }} para cubrir el total de la factura.
+              </p>
+            } @else if (cov.change > 0) {
+              <p class="font-semibold text-emerald-700">
+                Cambio / Devuelta en efectivo: ${{ cov.change | number:'1.0-0' }}
+              </p>
+            }
+          </div>
+
+          @if (submitError()) {
+            <div class="rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-medium text-red-700" role="alert">
+              {{ submitError() }}
+            </div>
+          }
+
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <button type="button" (click)="isPaymentModalOpen.set(false)" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Cancelar</button>
+            <button type="button" (click)="confirmCheckout()" [disabled]="!cov.isCovered || isSubmitting()"
+              class="rounded-xl bg-pine-700 px-5 py-2 text-xs font-semibold text-white hover:bg-pine-800 disabled:opacity-50"
+              data-testid="confirm-checkout-btn">
+              {{ isSubmitting() ? 'Emitiendo...' : 'Confirmar y Emitir Factura' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
