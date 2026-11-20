@@ -1,0 +1,119 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+  role="dialog"
+  aria-modal="true"
+  data-testid="product-form-modal">
+  
+  <div class="w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div>
+        <h2 class="text-base font-bold text-slate-800">
+          {{ isEditMode() ? 'Editar Producto / Insumo' : 'Registrar Nuevo Producto' }}
+        </h2>
+        <p class="text-xs text-slate-500">Control de catálogo y stock mínimo de seguridad (CU12)</p>
+      </div>
+
+      <button
+        type="button"
+        (click)="close()"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Cerrar">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label for="prodSku" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Código SKU *</label>
+          <input id="prodSku" type="text" formControlName="sku" placeholder="MED-001"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 font-mono text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label for="prodName" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Nombre del Producto *</label>
+          <input id="prodName" type="text" formControlName="name" placeholder="Ej: Amoxicilina + Ácido Clavulánico 250mg"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="prodCat" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Categoría *</label>
+          <select id="prodCat" formControlName="category"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none">
+            <option value="MEDICAMENTO">Medicamento</option>
+            <option value="INSUMO">Insumo Clínico</option>
+            <option value="BIOLOGICO">Biológico / Vacuna</option>
+            <option value="ALIMENTO">Alimento / Nutrición</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="prodSupplier" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Proveedor *</label>
+          <select id="prodSupplier" formControlName="supplierId"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none">
+            <option value="" disabled>Seleccione proveedor...</option>
+            @for (sup of suppliers(); track sup.id) {
+              <option [value]="sup.id">{{ sup.name }} ({{ sup.taxId }})</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label for="prodPrice" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Precio Unitario ($) *</label>
+          <input id="prodPrice" type="number" min="0" formControlName="unitPrice"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+
+        <div>
+          <label for="prodStock" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Existencias Actuales *</label>
+          <input id="prodStock" type="number" min="0" formControlName="currentStock"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+
+        <div>
+          <label for="prodMinStock" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Stock Mínimo *</label>
+          <input id="prodMinStock" type="number" min="0" formControlName="minStock"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="prodBatch" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Lote Inicial</label>
+          <input id="prodBatch" type="text" formControlName="batchNumber" placeholder="LOTE-001"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 font-mono text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+
+        <div>
+          <label for="prodExp" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Fecha Vencimiento</label>
+          <input id="prodExp" type="date" formControlName="expirationDate"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none" />
+        </div>
+      </div>
+
+      @if (submitError()) {
+        <div class="rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-medium text-red-700" role="alert">
+          {{ submitError() }}
+        </div>
+      }
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" (click)="close()"
+          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="form.invalid || isSubmitting()"
+          class="rounded-xl bg-pine-700 px-5 py-2 text-xs font-semibold text-white hover:bg-pine-800 disabled:opacity-50"
+          data-testid="product-submit-btn">
+          {{ isSubmitting() ? 'Guardando...' : (isEditMode() ? 'Actualizar Producto' : 'Guardar Producto') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
