@@ -1,0 +1,246 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera Principal del Módulo -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pine-700">
+        <span>Directorio de Clientes • Ley 1581 de 2012 (Habeas Data)</span>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+        Gestión de Propietarios
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">
+        Consulta, registro y administración de responsables de pacientes veterinarios
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <button
+        type="button"
+        (click)="openCreateClient()"
+        class="inline-flex items-center gap-2 rounded-xl bg-pine-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-pine-800 transition-colors"
+        data-testid="open-create-client-btn">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+        <span>Nuevo Propietario</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirmación Visual de Operaciones Exitosas -->
+  @if (feedbackMessage(); as msg) {
+    <div
+      role="status"
+      class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center justify-between text-xs font-medium text-emerald-900 animate-fadeIn"
+      data-testid="feedback-banner">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span>{{ msg }}</span>
+      </div>
+      <button
+        type="button"
+        (click)="dismissFeedback()"
+        class="font-bold text-emerald-700 hover:text-emerald-900 p-1"
+        aria-label="Cerrar notificación">
+        ✕
+      </button>
+    </div>
+  }
+
+  <!-- Error general de acceso o red -->
+  @if (errorMessage(); as err) {
+    <div class="rounded-xl bg-red-50 border border-red-200 p-5 text-center space-y-2" role="alert" data-testid="error-banner">
+      <p class="text-xs font-semibold text-red-800">{{ err }}</p>
+    </div>
+  }
+
+  <!-- Contenedor Principal: Buscador y Tabla -->
+  <div class="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-5">
+    <!-- Buscador Reactivo Optimizado (debounceTime 300ms + distinctUntilChanged) -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div class="relative flex-1 max-w-lg">
+        <label for="clientSearchInput" class="sr-only">Buscar por nombre completo, documento o teléfono</label>
+        <input
+          id="clientSearchInput"
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Buscar por nombre, cédula o teléfono..."
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-10 py-2.5 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+          data-testid="client-search-input" />
+        
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+
+        <!-- Indicador no bloqueante de búsqueda activa (< 1s) -->
+        @if (isSearching()) {
+          <div class="absolute right-3 top-3 flex items-center gap-1.5" data-testid="search-spinner">
+            <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-pine-700 border-r-transparent"></div>
+            <span class="text-[10px] text-slate-400 font-medium">Buscando...</span>
+          </div>
+        }
+      </div>
+
+      <!-- Selector de Tamaño de Página -->
+      <div class="flex items-center gap-2">
+        <label for="clientPageSize" class="text-xs text-slate-500 whitespace-nowrap">Mostrar:</label>
+        <select
+          id="clientPageSize"
+          [value]="pageSize()"
+          (change)="setPageSize(+$any($event.target).value)"
+          class="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+          data-testid="page-size-select">
+          <option [value]="5">5 por página</option>
+          <option [value]="10">10 por página</option>
+          <option [value]="20">20 por página</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Contenido de la Tabla -->
+    @if (isLoading()) {
+      <div class="py-12 text-center text-sm text-slate-500 space-y-2">
+        <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-pine-700 border-r-transparent"></div>
+        <p>Cargando directorio de propietarios...</p>
+      </div>
+    } @else if (clients().length === 0) {
+      <div class="py-12 text-center text-sm text-slate-500 space-y-2" data-testid="no-clients-message">
+        <p class="font-medium text-slate-700">No se encontraron propietarios coincidentes con la búsqueda.</p>
+        <p class="text-xs text-slate-400">Verifica el nombre, número de documento o teléfono ingresado.</p>
+      </div>
+    } @else {
+      <!-- Tabla Responsiva -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" data-testid="clients-table">
+          <thead>
+            <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th scope="col" class="py-3 px-3">Propietario / Cédula</th>
+              <th scope="col" class="py-3 px-3">Contacto (Tel / Correo)</th>
+              <th scope="col" class="py-3 px-3">Dirección</th>
+              <th scope="col" class="py-3 px-3">Mascotas</th>
+              <th scope="col" class="py-3 px-3">Habeas Data</th>
+              <th scope="col" class="py-3 px-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
+            @for (client of paginatedClients(); track client.id) {
+              <tr class="hover:bg-slate-50/70 transition-colors" [attr.data-testid]="'client-row-' + client.id">
+                <!-- Nombre y Cédula -->
+                <td class="py-3.5 px-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">
+                      {{ client.fullName.charAt(0) }}
+                    </div>
+                    <div>
+                      <p class="font-semibold text-slate-800" data-testid="client-fullname">{{ client.fullName }}</p>
+                      <p class="text-[11px] text-slate-400 font-mono" data-testid="client-id">C.C. {{ client.identification }}</p>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Teléfono y Correo -->
+                <td class="py-3.5 px-3">
+                  <span class="font-sans font-medium text-slate-700 block" data-testid="client-phone">{{ client.phone }}</span>
+                  <span class="text-[11px] font-mono text-slate-400 block" data-testid="client-email">{{ client.email }}</span>
+                </td>
+
+                <!-- Dirección -->
+                <td class="py-3.5 px-3">
+                  <span class="text-slate-600 line-clamp-1 max-w-xs" data-testid="client-address">{{ client.address }}</span>
+                </td>
+
+                <!-- Mascotas -->
+                <td class="py-3.5 px-3 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    <span>🐾</span>
+                    <span>{{ client.pets?.length || 0 }}</span>
+                  </span>
+                </td>
+
+                <!-- Habeas Data -->
+                <td class="py-3.5 px-3 whitespace-nowrap">
+                  @if (client.dataProcessingAuthorized) {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200" title="Consentimiento informado registrado según Ley 1581 de 2012">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                      <span>Autorizado</span>
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      <span class="h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+                      <span>Pendiente</span>
+                    </span>
+                  }
+                </td>
+
+                <!-- Acciones -->
+                <td class="py-3.5 px-3 text-right whitespace-nowrap space-x-1.5">
+                  <button
+                    type="button"
+                    (click)="navigateToDetail(client.id)"
+                    class="rounded-lg bg-pine-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-pine-800 transition-colors shadow-2xs"
+                    title="Ver ficha completa e historial"
+                    [attr.data-testid]="'view-client-btn-' + client.id">
+                    Ver Detalle
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openEditClient(client)"
+                    class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors"
+                    title="Editar información del propietario"
+                    [attr.data-testid]="'edit-client-btn-' + client.id">
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Barra de Paginación -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100 text-xs text-slate-500">
+        <div>
+          Mostrando {{ (currentPage() - 1) * pageSize() + 1 }} a
+          {{ Math.min(currentPage() * pageSize(), totalCount()) }} de
+          {{ totalCount() }} propietarios
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="prevPage()"
+            [disabled]="currentPage() === 1"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            data-testid="prev-page-btn">
+            Anterior
+          </button>
+
+          <span class="px-2 font-medium" data-testid="pagination-info">
+            Página {{ currentPage() }} de {{ totalPages() }}
+          </span>
+
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="currentPage() === totalPages()"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            data-testid="next-page-btn">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Modal de Formulario (Creación o Edición) -->
+  @if (isFormModalOpen()) {
+    <app-client-form
+      [client]="selectedClientForEdit()"
+      [existingIdentifications]="existingIdentifications()"
+      (saved)="onClientSaved($event)"
+      (closed)="closeFormModal()" />
+  }
+</div>

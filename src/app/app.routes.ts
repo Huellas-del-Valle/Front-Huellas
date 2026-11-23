@@ -55,12 +55,10 @@ export const routes: Routes = [
       },
       {
         path: 'clients',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] }
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/clients/clients.routes').then((m) => m.CLIENTS_ROUTES)
       },
       {
         path: 'patients',
