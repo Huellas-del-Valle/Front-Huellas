@@ -1,0 +1,388 @@
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Cabecera Principal del Módulo -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pine-700">
+        <span>Administración • Control de Acceso RBAC</span>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-0.5">
+        Gestión de Empleados y Usuarios
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">
+        Directorio institucional, asignación de roles y control de credenciales de acceso
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <button
+        type="button"
+        (click)="openCreateUser()"
+        class="inline-flex items-center gap-2 rounded-xl bg-pine-700 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-pine-800 transition-colors"
+        data-testid="open-create-user-btn">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+        <span>Nuevo Empleado</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas / KPIs -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500">Total Empleados</p>
+        <p class="text-2xl font-bold text-slate-900 mt-0.5" data-testid="total-users-count">{{ users().length }}</p>
+      </div>
+      <div class="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600">
+        👥
+      </div>
+    </div>
+
+    <div class="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500">Cuentas Activas</p>
+        <p class="text-2xl font-bold text-emerald-700 mt-0.5" data-testid="active-users-count">{{ activeUsersCount() }}</p>
+      </div>
+      <div class="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+        ✅
+      </div>
+    </div>
+
+    <div class="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500">Cuentas Inactivas</p>
+        <p class="text-2xl font-bold text-slate-500 mt-0.5" data-testid="inactive-users-count">{{ inactiveUsersCount() }}</p>
+      </div>
+      <div class="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+        🔒
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación Visual de Operaciones Exitosas -->
+  @if (feedbackMessage(); as msg) {
+    <div
+      role="status"
+      class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center justify-between text-xs font-medium text-emerald-900 animate-fadeIn"
+      data-testid="feedback-banner">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span>{{ msg }}</span>
+      </div>
+      <button
+        type="button"
+        (click)="dismissFeedback()"
+        class="font-bold text-emerald-700 hover:text-emerald-900 p-1"
+        aria-label="Cerrar notificación"
+        data-testid="dismiss-feedback-btn">
+        ✕
+      </button>
+    </div>
+  }
+
+  <!-- Error general de acceso o red -->
+  @if (errorMessage(); as err) {
+    <div class="rounded-xl bg-red-50 border border-red-200 p-5 text-center space-y-2" role="alert" data-testid="error-banner">
+      <p class="text-xs font-semibold text-red-800">{{ err }}</p>
+    </div>
+  }
+
+  <!-- Contenedor Principal: Filtros y Tabla -->
+  <div class="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-5">
+    <!-- Barra de Búsqueda y Filtros -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- Buscador por nombre o correo -->
+      <div class="sm:col-span-2 lg:col-span-1">
+        <label for="userSearch" class="sr-only">Buscar por nombre, correo o identificación</label>
+        <div class="relative">
+          <input
+            id="userSearch"
+            type="search"
+            [value]="searchTerm()"
+            (input)="setSearchTerm($any($event.target).value)"
+            placeholder="Buscar por nombre, correo o C.C..."
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="user-search-input" />
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Filtro por Rol -->
+      <div>
+        <label for="roleFilter" class="sr-only">Filtrar por rol</label>
+        <select
+          id="roleFilter"
+          [value]="roleFilter()"
+          (change)="setRoleFilter($any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+          data-testid="user-role-filter">
+          <option value="ALL">Todos los roles</option>
+          <option value="ADMIN">ADMIN (Administradores)</option>
+          <option value="VETERINARIO">VETERINARIO (Médicos)</option>
+          <option value="RECEPCIONISTA">RECEPCIONISTA (Recepción y Caja)</option>
+        </select>
+      </div>
+
+      <!-- Filtro por Estado -->
+      <div>
+        <label for="statusFilter" class="sr-only">Filtrar por estado</label>
+        <select
+          id="statusFilter"
+          [value]="statusFilter()"
+          (change)="setStatusFilter($any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+          data-testid="user-status-filter">
+          <option value="ALL">Todos los estados</option>
+          <option value="ACTIVE">Activos únicamente</option>
+          <option value="INACTIVE">Inactivos únicamente</option>
+        </select>
+      </div>
+
+      <!-- Tamaño de Página -->
+      <div>
+        <label for="pageSizeSelect" class="sr-only">Items por página</label>
+        <select
+          id="pageSizeSelect"
+          [value]="pageSize()"
+          (change)="setPageSize(+$any($event.target).value)"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs text-slate-700 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+          data-testid="user-pagesize-select">
+          <option [value]="5">5 por página</option>
+          <option [value]="10">10 por página</option>
+          <option [value]="20">20 por página</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Contenido de la Tabla -->
+    @if (isLoading()) {
+      <div class="py-12 text-center text-sm text-slate-500 space-y-2">
+        <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-pine-700 border-r-transparent"></div>
+        <p>Cargando directorio de empleados...</p>
+      </div>
+    } @else if (filteredUsers().length === 0) {
+      <div class="py-12 text-center text-sm text-slate-500 space-y-2" data-testid="no-users-message">
+        <p class="font-medium text-slate-700">No se encontraron empleados con los filtros aplicados.</p>
+        <p class="text-xs text-slate-400">Intenta modificando el término de búsqueda o restableciendo los filtros.</p>
+      </div>
+    } @else {
+      <!-- Tabla Responsiva -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" data-testid="users-table">
+          <thead>
+            <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th scope="col" class="py-3 px-3">Empleado</th>
+              <th scope="col" class="py-3 px-3">Correo Institucional</th>
+              <th scope="col" class="py-3 px-3">Rol / Permisos</th>
+              <th scope="col" class="py-3 px-3">Estado</th>
+              <th scope="col" class="py-3 px-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
+            @for (user of paginatedUsers(); track user.id) {
+              <tr class="hover:bg-slate-50/70 transition-colors" [attr.data-testid]="'user-row-' + user.id">
+                <!-- Nombre y Cédula -->
+                <td class="py-3.5 px-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">
+                      {{ user.fullName.charAt(0) }}
+                    </div>
+                    <div>
+                      <p class="font-semibold text-slate-800" data-testid="user-fullname">{{ user.fullName }}</p>
+                      @if (user.identification) {
+                        <p class="text-[11px] text-slate-400 font-mono">C.C. {{ user.identification }}</p>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Correo Institucional -->
+                <td class="py-3.5 px-3">
+                  <span class="font-mono text-slate-600" data-testid="user-email">{{ user.email }}</span>
+                  @if (user.phone) {
+                    <p class="text-[11px] text-slate-400 font-sans">{{ user.phone }}</p>
+                  }
+                </td>
+
+                <!-- Rol -->
+                <td class="py-3.5 px-3">
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border"
+                    [ngClass]="roleMetadata[user.role].badgeClass"
+                    data-testid="user-role-badge">
+                    {{ user.role }}
+                  </span>
+                  <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1 max-w-xs">
+                    {{ roleMetadata[user.role].title }}
+                  </p>
+                </td>
+
+                <!-- Estado -->
+                <td class="py-3.5 px-3">
+                  @if (user.isActive) {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200" data-testid="status-active-badge">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                      <span>Activo</span>
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200" data-testid="status-inactive-badge">
+                      <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                      <span>Inactivo</span>
+                    </span>
+                  }
+                </td>
+
+                <!-- Acciones -->
+                <td class="py-3.5 px-3 text-right whitespace-nowrap space-x-1.5">
+                  <button
+                    type="button"
+                    (click)="openEditUser(user)"
+                    class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-pine-700 hover:text-pine-700 transition-colors"
+                    title="Editar datos del empleado"
+                    data-testid="edit-user-btn">
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="promptToggleStatus(user)"
+                    [class.border-amber-200]="user.isActive"
+                    [class.text-amber-800]="user.isActive"
+                    [class.bg-amber-50]="user.isActive"
+                    [class.hover:bg-amber-100]="user.isActive"
+                    [class.border-emerald-200]="!user.isActive"
+                    [class.text-emerald-800]="!user.isActive"
+                    [class.bg-emerald-50]="!user.isActive"
+                    [class.hover:bg-emerald-100]="!user.isActive"
+                    class="rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors"
+                    [attr.data-testid]="'toggle-status-btn-' + user.id">
+                    {{ user.isActive ? 'Inactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Barra de Paginación -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100 text-xs text-slate-500">
+        <div>
+          Mostrando {{ (currentPage() - 1) * pageSize() + 1 }} a
+          {{ Math.min(currentPage() * pageSize(), totalFilteredCount()) }} de
+          {{ totalFilteredCount() }} empleados
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="prevPage()"
+            [disabled]="currentPage() === 1"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            data-testid="prev-page-btn">
+            Anterior
+          </button>
+
+          <span class="px-2 font-medium" data-testid="pagination-info">
+            Página {{ currentPage() }} de {{ totalPages() }}
+          </span>
+
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="currentPage() === totalPages()"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            data-testid="next-page-btn">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Diálogo de Confirmación Explícita para Activar / Inactivar Cuenta -->
+  @if (userToToggleStatus(); as targetUser) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+      role="alertdialog"
+      aria-modal="true"
+      data-testid="confirm-status-modal">
+      
+      <div class="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 space-y-4 animate-fadeIn">
+        <div class="flex items-start gap-3">
+          <div
+            class="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+            [class.bg-amber-100]="targetUser.isActive"
+            [class.text-amber-700]="targetUser.isActive"
+            [class.bg-emerald-100]="!targetUser.isActive"
+            [class.text-emerald-700]="!targetUser.isActive">
+            @if (targetUser.isActive) {
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            } @else {
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          </div>
+
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold text-slate-800" data-testid="confirm-dialog-title">
+              {{ targetUser.isActive ? '¿Inactivar cuenta de empleado?' : '¿Activar cuenta de empleado?' }}
+            </h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              @if (targetUser.isActive) {
+                Estás a punto de inactivar el acceso de <strong>{{ targetUser.fullName }}</strong>. El empleado no podrá iniciar sesión en la plataforma mientras su cuenta permanezca inactiva.
+              } @else {
+                Estás a punto de reactivar el acceso de <strong>{{ targetUser.fullName }}</strong>. El empleado podrá volver a iniciar sesión con sus credenciales institucionales.
+              }
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            (click)="cancelToggleStatus()"
+            [disabled]="isStatusSubmitting()"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            data-testid="cancel-status-btn">
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmToggleStatus()"
+            [disabled]="isStatusSubmitting()"
+            [class.bg-amber-700]="targetUser.isActive"
+            [class.hover:bg-amber-800]="targetUser.isActive"
+            [class.bg-emerald-700]="!targetUser.isActive"
+            [class.hover:bg-emerald-800]="!targetUser.isActive"
+            class="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-white transition-colors"
+            data-testid="confirm-status-btn">
+            @if (isStatusSubmitting()) {
+              <span>Actualizando...</span>
+            } @else {
+              <span>{{ targetUser.isActive ? 'Confirmar Inactivación' : 'Confirmar Activación' }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de Formulario (Creación o Edición) -->
+  @if (isFormModalOpen()) {
+    <app-user-form-dialog
+      [user]="selectedUserForEdit()"
+      [existingEmails]="existingEmails()"
+      (saved)="onUserSaved($event)"
+      (closed)="closeFormModal()" />
+  }
+</div>
