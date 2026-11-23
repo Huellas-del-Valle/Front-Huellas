@@ -48,12 +48,10 @@ export const routes: Routes = [
       },
       {
         path: 'users',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN'] }
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadChildren: () =>
+          import('./features/users/users.routes').then((m) => m.USERS_ROUTES)
       },
       {
         path: 'clients',

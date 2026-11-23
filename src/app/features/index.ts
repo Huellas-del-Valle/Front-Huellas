@@ -2,3 +2,5 @@
 export * from './dashboard/dashboard.component';
 export * from './auth/login.component';
 export * from './auth/access-denied.component';
+export * from './users';
+
