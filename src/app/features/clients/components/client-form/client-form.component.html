@@ -1,0 +1,231 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto"
+  role="dialog"
+  aria-modal="true"
+  data-testid="client-form-modal">
+  
+  <div class="w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden my-auto animate-fadeIn">
+    <!-- Encabezado del Modal -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-pine-50 border border-pine-200/60 flex items-center justify-center text-pine-700">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-slate-800" data-testid="client-form-title">
+            {{ isEditMode() ? 'Editar Datos del Propietario' : 'Registrar Nuevo Propietario' }}
+          </h2>
+          <p class="text-xs text-slate-500">
+            Registro de clientes y protección de datos personales (Ley 1581 de 2012)
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="close()"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition-colors"
+        aria-label="Cerrar modal"
+        data-testid="close-client-dialog-btn">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Alerta de Error de Envío / Documento Duplicado -->
+    @if (submitError(); as error) {
+      <div class="mx-6 mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2.5 animate-fadeIn" role="alert" data-testid="client-submit-error">
+        <svg class="w-4 h-4 text-red-600 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <span class="flex-1 font-medium">{{ error }}</span>
+      </div>
+    }
+
+    <!-- Formulario Reactivo -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Documento de Identificación -->
+        <div>
+          <label for="clientIdInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Cédula / Documento <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="clientIdInput"
+            type="text"
+            formControlName="identification"
+            placeholder="Ej. 1088000111"
+            [class.border-red-400]="identification.invalid && (identification.touched || identification.dirty)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-mono text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="client-id-input" />
+          @if (identification.invalid && (identification.touched || identification.dirty)) {
+            <div class="text-xs text-red-600 mt-1 space-y-0.5" role="alert">
+              @if (identification.errors?.['required']) {
+                <p>El documento de identidad es obligatorio.</p>
+              }
+              @if (identification.errors?.['minlength'] || identification.errors?.['invalidIdentificationLength']) {
+                <p>Debe tener entre 6 y 15 caracteres.</p>
+              }
+              @if (identification.errors?.['invalidIdentificationFormat']) {
+                <p>Solo se permiten caracteres alfanuméricos y guiones.</p>
+              }
+              @if (identification.errors?.['duplicate']) {
+                <p>Este documento ya se encuentra registrado por otro propietario.</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Teléfono Celular -->
+        <div>
+          <label for="clientPhoneInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Teléfono Móvil <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="clientPhoneInput"
+            type="tel"
+            formControlName="phone"
+            placeholder="Ej. 3001234567"
+            [class.border-red-400]="phone.invalid && (phone.touched || phone.dirty)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="client-phone-input" />
+          @if (phone.invalid && (phone.touched || phone.dirty)) {
+            <div class="text-xs text-red-600 mt-1" role="alert">
+              @if (phone.errors?.['required']) {
+                <p>El teléfono celular es obligatorio.</p>
+              }
+              @if (phone.errors?.['invalidPhoneFormat']) {
+                <p>Ingresa un número telefónico válido (ej. 3001234567).</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Nombre Completo -->
+        <div class="sm:col-span-2">
+          <label for="clientNameInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Nombre Completo <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="clientNameInput"
+            type="text"
+            formControlName="fullName"
+            placeholder="Ej. Carlos Andrés Gómez Pérez"
+            [class.border-red-400]="fullName.invalid && (fullName.touched || fullName.dirty)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="client-fullname-input" />
+          @if (fullName.invalid && (fullName.touched || fullName.dirty)) {
+            <div class="text-xs text-red-600 mt-1" role="alert">
+              @if (fullName.errors?.['required']) {
+                <p>El nombre completo es obligatorio.</p>
+              }
+              @if (fullName.errors?.['minlength']) {
+                <p>El nombre debe tener al menos 3 caracteres.</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Correo Electrónico -->
+        <div class="sm:col-span-2">
+          <label for="clientEmailInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Correo Electrónico <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="clientEmailInput"
+            type="email"
+            formControlName="email"
+            placeholder="ejemplo@correo.com"
+            [class.border-red-400]="email.invalid && (email.touched || email.dirty)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="client-email-input" />
+          @if (email.invalid && (email.touched || email.dirty)) {
+            <div class="text-xs text-red-600 mt-1" role="alert">
+              @if (email.errors?.['required']) {
+                <p>El correo electrónico es obligatorio.</p>
+              }
+              @if (email.errors?.['email']) {
+                <p>Ingresa un formato de correo electrónico válido.</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Dirección de Residencia -->
+        <div class="sm:col-span-2">
+          <label for="clientAddressInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Dirección de Residencia <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="clientAddressInput"
+            type="text"
+            formControlName="address"
+            placeholder="Ej. Calle 15 # 24-30, Barrio Laureles"
+            [class.border-red-400]="address.invalid && (address.touched || address.dirty)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:bg-white focus:border-pine-700 focus:outline-none transition-colors"
+            data-testid="client-address-input" />
+          @if (address.invalid && (address.touched || address.dirty)) {
+            <div class="text-xs text-red-600 mt-1" role="alert">
+              @if (address.errors?.['required']) {
+                <p>La dirección de residencia es obligatoria.</p>
+              }
+              @if (address.errors?.['minlength']) {
+                <p>La dirección debe tener al menos 5 caracteres.</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Casilla Obligatoria de Tratamiento de Datos (Ley 1581 de 2012 - Habeas Data) -->
+      <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/80 space-y-2">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            formControlName="dataProcessingAuthorized"
+            class="mt-1 h-4 w-4 rounded border-slate-300 text-pine-700 focus:ring-pine-500 transition-colors shrink-0"
+            data-testid="client-habeas-checkbox" />
+          <span class="text-xs text-slate-700 leading-relaxed">
+            <strong class="font-bold text-slate-900">Consentimiento de Habeas Data:</strong> Autorizo de manera previa, expresa e informada a <em>Huellas del Valle S.A.S.</em> para el tratamiento de mis datos personales para fines asistenciales, de contacto y facturación, conforme a la <strong>Ley 1581 de 2012</strong> y las políticas de privacidad institucionales. <span class="text-red-500">*</span>
+          </span>
+        </label>
+
+        @if (dataProcessingAuthorized.invalid && (dataProcessingAuthorized.touched || dataProcessingAuthorized.dirty)) {
+          <p class="text-xs text-red-600 font-medium pl-7" role="alert" data-testid="habeas-error-message">
+            El consentimiento para el tratamiento de datos personales es obligatorio antes de guardar (Ley 1581 de 2012).
+          </p>
+        }
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button
+          type="button"
+          (click)="close()"
+          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          data-testid="cancel-client-btn">
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          [disabled]="isSubmitting()"
+          class="inline-flex items-center gap-2 rounded-xl bg-pine-700 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-pine-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          data-testid="save-client-btn">
+          @if (isSubmitting()) {
+            <svg class="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Guardando...</span>
+          } @else {
+            <span>{{ isEditMode() ? 'Actualizar Propietario' : 'Registrar Propietario' }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
