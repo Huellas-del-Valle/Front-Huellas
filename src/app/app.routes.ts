@@ -85,12 +85,12 @@ export const routes: Routes = [
       },
       {
         path: 'appointments',
-        loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
-          ),
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] }
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['ADMIN', 'VETERINARIO', 'RECEPCIONISTA'] },
+        loadChildren: () =>
+          import('./features/appointments/appointments.routes').then(
+            (m) => m.APPOINTMENTS_ROUTES
+          )
       },
       {
         path: 'inventory',
