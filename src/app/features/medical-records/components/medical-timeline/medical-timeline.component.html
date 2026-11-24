@@ -1,0 +1,290 @@
+<div class="max-w-6xl mx-auto space-y-6 pb-10">
+  <!-- Cabecera Fija del Paciente (Sticky Header - RNF-04) -->
+  <header
+    class="sticky top-0 z-20 rounded-2xl bg-white/95 backdrop-blur-sm p-5 border border-slate-200 shadow-sm space-y-4"
+    data-testid="sticky-patient-header">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <app-patient-badge
+          [uniqueCode]="patient().uniqueCode"
+          [name]="patient().name"
+          [species]="patient().species"
+          [breed]="patient().breed"
+          [ownerName]="patient().client?.fullName" />
+
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600 border-l-0 sm:border-l border-slate-200 sm:pl-4">
+          <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-medium">
+            Sexo: <strong class="text-slate-800">{{ patient().gender }}</strong>
+          </span>
+          @if (patient().estimatedAge) {
+            <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-medium">
+              Edad: <strong class="text-slate-800">{{ patient().estimatedAge }}</strong>
+            </span>
+          }
+          <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-medium">
+            Color: <strong class="text-slate-800">{{ patient().color }}</strong>
+          </span>
+          @if (patient().client?.phone) {
+            <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-medium">
+              Tel. Propietario: <strong class="text-slate-800">{{ patient().client?.phone }}</strong>
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Acciones de Cabecera -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <select
+          [ngModel]="patient().id"
+          (ngModelChange)="onSelectPatient($event)"
+          aria-label="Cambiar paciente"
+          class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-pine-600 focus:outline-none"
+          data-testid="select-patient">
+          @for (p of availablePatients(); track p.id) {
+            <option [value]="p.id">{{ p.uniqueCode }} — {{ p.name }}</option>
+          }
+        </select>
+
+        <button
+          type="button"
+          (click)="exportFullHistoryPdf()"
+          [disabled]="isExportingPdf()"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          data-testid="btn-export-full-pdf">
+          <svg class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          {{ isExportingPdf() ? 'Generando PDF...' : 'Exportar Expediente PDF' }}
+        </button>
+
+        @if (canEditConsultations()) {
+          <button
+            type="button"
+            (click)="openNewConsultation()"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800 transition-colors shadow-sm"
+            data-testid="btn-new-consultation">
+            + Nueva Atención
+          </button>
+        }
+      </div>
+    </div>
+  </header>
+
+  <!-- Notificaciones -->
+  @if (toastMessage()) {
+    <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between" data-testid="timeline-toast">
+      <span>{{ toastMessage() }}</span>
+      <button type="button" (click)="toastMessage.set(null)" class="text-emerald-600 hover:text-emerald-900">✕</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs font-semibold text-rose-700 flex items-center justify-between" data-testid="timeline-error">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)" class="text-rose-500 hover:text-rose-800">✕</button>
+    </div>
+  }
+
+  <!-- Formulario de Consulta (Visible debajo de la cabecera fija) -->
+  @if (showConsultationForm()) {
+    <app-consultation-form
+      [petId]="patient().id"
+      [editingRecord]="editingRecord()"
+      (saved)="onConsultationSaved($event)"
+      (cancelled)="onConsultationCancelled()" />
+  }
+
+  <!-- Barra de Filtros Cronológicos -->
+  <section class="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="filterDate">
+          Filtrar por fecha
+        </label>
+        <input
+          id="filterDate"
+          type="date"
+          [ngModel]="filterDate()"
+          (ngModelChange)="filterDate.set($event)"
+          class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 focus:border-pine-600 focus:outline-none"
+          data-testid="filter-date" />
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="filterType">
+          Tipo de registro
+        </label>
+        <select
+          id="filterType"
+          [ngModel]="filterType()"
+          (ngModelChange)="filterType.set($event)"
+          class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 focus:border-pine-600 focus:outline-none"
+          data-testid="filter-type">
+          <option value="ALL">Todos los tipos</option>
+          @for (opt of recordTypeOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (filterDate() || filterType() !== 'ALL') {
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="mt-4 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+          data-testid="btn-clear-filters">
+          Limpiar filtros
+        </button>
+      }
+    </div>
+
+    <div class="flex items-center gap-3 text-xs text-slate-500">
+      <span>
+        Mostrando <strong class="text-slate-800">{{ filteredRecords().length }}</strong> atenciones
+      </span>
+      <button
+        type="button"
+        (click)="toggleSortDirection()"
+        class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+        data-testid="btn-toggle-sort">
+        Orden: {{ sortDirection() === 'DESC' ? 'Más recientes primero' : 'Más antiguas primero' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- Línea de Tiempo Cronológica -->
+  @if (isLoading()) {
+    <div class="rounded-2xl bg-white p-10 text-center border border-slate-200">
+      <p class="text-sm font-medium text-slate-500">Consultando expediente clínico...</p>
+    </div>
+  } @else if (filteredRecords().length === 0) {
+    <div class="rounded-2xl bg-white p-10 text-center border border-slate-200 space-y-2" data-testid="empty-timeline">
+      <p class="text-sm font-semibold text-slate-700">No hay atenciones registradas con los filtros actuales.</p>
+      <p class="text-xs text-slate-500">
+        El historial clínico se conserva de forma íntegra sin eliminación física de registros.
+      </p>
+    </div>
+  } @else {
+    <div class="relative pl-6 space-y-5 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200" data-testid="timeline-list">
+      @for (record of filteredRecords(); track record.id) {
+        <article
+          class="relative rounded-2xl bg-white p-5 border border-slate-200 shadow-sm hover:border-pine-600/40 transition-colors space-y-4"
+          data-testid="timeline-card">
+          <!-- Punto en la línea de tiempo -->
+          <span
+            class="absolute -left-[22px] top-6 h-3.5 w-3.5 rounded-full ring-4 ring-white"
+            [ngClass]="typeConfig[record.recordType].dotClass"></span>
+
+          <!-- Cabecera de la Atención -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span
+                class="inline-flex items-center rounded-lg border px-2.5 py-0.5 text-[11px] font-bold"
+                [ngClass]="typeConfig[record.recordType].badgeClass">
+                {{ typeConfig[record.recordType].label }}
+              </span>
+              <time class="text-xs font-semibold text-slate-700">
+                {{ record.recordDate | date: 'dd/MM/yyyy HH:mm' }}
+              </time>
+              <span class="text-xs text-slate-500">
+                • Profesional: <strong class="text-slate-700">{{ record.veterinarianName }}</strong>
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <a
+                [routerLink]="['/medical-records', record.id, 'attachments']"
+                class="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                Adjuntos
+              </a>
+              <button
+                type="button"
+                (click)="exportSingleRecordPdf(record)"
+                class="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                data-testid="btn-export-record-pdf">
+                PDF
+              </button>
+              @if (canEditConsultations()) {
+                <button
+                  type="button"
+                  (click)="openEditConsultation(record)"
+                  class="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-pine-700 hover:bg-pine-700 hover:text-white transition-colors"
+                  data-testid="btn-edit-record">
+                  Editar
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Signos Vitales -->
+          @if (record.weightKg !== null || record.temperatureC !== null) {
+            <div class="flex flex-wrap gap-3 text-xs">
+              @if (record.weightKg !== null) {
+                <span class="rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1 text-slate-700">
+                  Peso: <strong>{{ record.weightKg }} kg</strong>
+                </span>
+              }
+              @if (record.temperatureC !== null) {
+                <span class="rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1 text-slate-700">
+                  Temperatura: <strong>{{ record.temperatureC }} °C</strong>
+                </span>
+              }
+            </div>
+          }
+
+          <!-- Cuerpo Clínico -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <h4 class="font-bold uppercase tracking-wider text-slate-400 text-[10px] mb-1">
+                Síntomas / Anamnesis
+              </h4>
+              <p class="text-slate-700 leading-relaxed">{{ record.symptoms }}</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase tracking-wider text-slate-400 text-[10px] mb-1">
+                Diagnóstico
+              </h4>
+              <p class="font-semibold text-slate-900 leading-relaxed">{{ record.diagnosis }}</p>
+            </div>
+          </div>
+
+          @if (record.treatment) {
+            <div class="text-xs">
+              <h4 class="font-bold uppercase tracking-wider text-slate-400 text-[10px] mb-1">
+                Tratamiento
+              </h4>
+              <p class="text-slate-700 leading-relaxed">{{ record.treatment }}</p>
+            </div>
+          }
+
+          <!-- Prescripciones -->
+          @if (record.prescriptions.length > 0) {
+            <div class="rounded-xl bg-slate-50 border border-slate-200/80 p-3 space-y-1.5">
+              <h4 class="font-bold uppercase tracking-wider text-slate-500 text-[10px]">
+                Prescripciones ({{ record.prescriptions.length }})
+              </h4>
+              <ul class="space-y-1 text-xs text-slate-700">
+                @for (item of record.prescriptions; track $index) {
+                  <li class="flex flex-wrap items-center gap-1.5">
+                    <span class="font-semibold text-pine-700">• {{ item.medication }}</span>
+                    @if (item.dosage) {
+                      <span>— {{ item.dosage }}</span>
+                    }
+                    @if (item.frequency) {
+                      <span class="text-slate-500">({{ item.frequency }})</span>
+                    }
+                    @if (item.duration) {
+                      <span class="text-slate-500">por {{ item.duration }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</div>
+
