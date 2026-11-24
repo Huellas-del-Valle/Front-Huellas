@@ -1,0 +1,257 @@
+<div class="max-w-7xl mx-auto space-y-6 pb-10">
+  @if (!isAdmin()) {
+    <div class="rounded-2xl bg-rose-50 border border-rose-200 p-8 text-center space-y-2" data-testid="reports-access-denied">
+      <h1 class="text-lg font-bold text-rose-800">Acceso Restringido</h1>
+      <p class="text-sm text-rose-700">
+        Solo el personal con rol <strong>ADMIN</strong> está autorizado para consultar métricas financieras, reportes gerenciales y auditoría.
+      </p>
+    </div>
+  } @else {
+    <!-- Cabecera y Navegación del Módulo -->
+    <div class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-pine-700">
+          Gestión Gerencial y Control • Solo ADMIN
+        </span>
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight mt-0.5">
+          Dashboard de Reportes Financieros y Clínicos
+        </h1>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <a
+          routerLink="/reports"
+          class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white shadow-sm">
+          Dashboard Gerencial
+        </a>
+        <a
+          routerLink="/reports/audit"
+          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          data-testid="link-audit-logs">
+          Bitácora de Auditoría
+        </a>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros y Exportación -->
+    <section class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="startDate">
+            Fecha Desde
+          </label>
+          <input
+            id="startDate"
+            type="date"
+            [ngModel]="startDate()"
+            (ngModelChange)="startDate.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-start-date" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="endDate">
+            Fecha Hasta
+          </label>
+          <input
+            id="endDate"
+            type="date"
+            [ngModel]="endDate()"
+            (ngModelChange)="endDate.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-end-date" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="veterinarianId">
+            Veterinario
+          </label>
+          <select
+            id="veterinarianId"
+            [ngModel]="veterinarianId()"
+            (ngModelChange)="veterinarianId.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-veterinarian">
+            <option value="ALL">Todos los profesionales</option>
+            @for (vet of veterinarians; track vet.id) {
+              <option [value]="vet.id">{{ vet.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="serviceType">
+            Tipo de Servicio
+          </label>
+          <select
+            id="serviceType"
+            [ngModel]="serviceType()"
+            (ngModelChange)="serviceType.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-service-type">
+            @for (srv of serviceTypes; track srv.value) {
+              <option [value]="srv.value">{{ srv.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="cashStatus">
+            Estado de Caja
+          </label>
+          <select
+            id="cashStatus"
+            [ngModel]="cashStatus()"
+            (ngModelChange)="cashStatus.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-cash-status">
+            @for (st of cashStatuses; track st.value) {
+              <option [value]="st.value">{{ st.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <button
+            type="button"
+            (click)="loadMetrics()"
+            [disabled]="isLoading()"
+            class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800 transition-colors"
+            data-testid="btn-apply-filters">
+            {{ isLoading() ? 'Consultando...' : 'Aplicar Filtros' }}
+          </button>
+          <button
+            type="button"
+            (click)="clearFilters()"
+            class="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+            data-testid="btn-clear-filters">
+            Limpiar
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <button
+            type="button"
+            (click)="exportPdf()"
+            [disabled]="isExporting()"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+            data-testid="btn-export-pdf">
+            Exportar PDF
+          </button>
+          <button
+            type="button"
+            (click)="exportExcel()"
+            [disabled]="isExporting()"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors"
+            data-testid="btn-export-excel">
+            Exportar Excel (.xlsx)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    @if (toastMessage()) {
+      <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between" data-testid="reports-toast">
+        <span>{{ toastMessage() }}</span>
+        <button type="button" (click)="toastMessage.set(null)">✕</button>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs font-semibold text-rose-700" data-testid="reports-error">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <!-- Tarjetas KPI -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500">Ingresos Totales</span>
+        <p class="text-2xl font-bold text-slate-800 mt-1" data-testid="kpi-total-revenue">
+          {{ dashboardData().totalRevenue | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        </p>
+      </div>
+      <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500">Consultas Realizadas</span>
+        <p class="text-2xl font-bold text-pine-700 mt-1" data-testid="kpi-total-consultations">
+          {{ dashboardData().totalConsultations }}
+        </p>
+      </div>
+      <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500">Ticket Promedio</span>
+        <p class="text-2xl font-bold text-slate-800 mt-1">
+          {{ dashboardData().averageTicket | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        </p>
+      </div>
+      <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500">Cierres de Caja</span>
+        <p class="text-2xl font-bold text-slate-800 mt-1">
+          {{ dashboardData().cashClosedCount }}
+        </p>
+      </div>
+    </section>
+
+    <!-- Gráficas Gerenciales -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Gráfica 1: Ingresos Mensuales -->
+      <div class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm space-y-4" data-testid="monthly-revenue-chart">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Ingresos Mensuales</h2>
+          <p class="text-xs text-slate-500">Evolución de facturación por periodo seleccionado</p>
+        </div>
+
+        <div class="h-60 flex items-end gap-3 pt-6 pb-2 border-b border-slate-100">
+          @for (point of dashboardData().monthlyRevenue; track point.month) {
+            <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+              <span class="text-[10px] font-semibold text-slate-600 text-center">
+                {{ point.revenue | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+              </span>
+              <div class="w-full max-w-[44px] bg-slate-100 rounded-t-lg h-40 flex items-end overflow-hidden">
+                <div
+                  class="w-full bg-pine-700 rounded-t-lg transition-all duration-300"
+                  [style.height.%]="getBarHeightPercent(point.revenue)"></div>
+              </div>
+              <span class="text-xs font-bold text-slate-700">{{ point.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Gráfica 2: Volumen de Consultas por Profesional -->
+      <div class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm space-y-4" data-testid="vet-consultations-chart">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Volumen de Consultas por Profesional</h2>
+          <p class="text-xs text-slate-500">Distribución de atenciones e ingresos generados por veterinario</p>
+        </div>
+
+        <div class="space-y-4 pt-2">
+          @for (vet of dashboardData().consultationsByVet; track vet.veterinarianId) {
+            <div class="space-y-1.5" data-testid="vet-volume-row">
+              <div class="flex items-center justify-between text-xs">
+                <div>
+                  <span class="font-bold text-slate-800">{{ vet.veterinarianName }}</span>
+                  <span class="text-slate-400 ml-1.5">• {{ vet.specialty }}</span>
+                </div>
+                <span class="font-semibold text-pine-700">
+                  {{ vet.consultationsCount }} consultas
+                </span>
+              </div>
+
+              <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  class="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                  [style.width.%]="getVetWidthPercent(vet.consultationsCount)"></div>
+              </div>
+
+              <p class="text-[11px] text-slate-500 text-right">
+                Facturación: {{ vet.revenueGenerated | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+              </p>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>

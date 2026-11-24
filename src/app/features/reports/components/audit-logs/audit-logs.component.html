@@ -1,0 +1,268 @@
+<div class="max-w-7xl mx-auto space-y-6 pb-10">
+  @if (!isAdmin()) {
+    <div class="rounded-2xl bg-rose-50 border border-rose-200 p-8 text-center space-y-2" data-testid="audit-access-denied">
+      <h1 class="text-lg font-bold text-rose-800">Acceso Restringido</h1>
+      <p class="text-sm text-rose-700">
+        Solo el personal con rol <strong>ADMIN</strong> puede consultar la bitácora de auditoría y los detalles técnicos de eventos.
+      </p>
+    </div>
+  } @else {
+    <!-- Cabecera y Navegación del Módulo -->
+    <div class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-pine-700">
+          Seguridad y Trazabilidad • Solo ADMIN
+        </span>
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight mt-0.5">
+          Bitácora de Auditoría del Sistema
+        </h1>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <a
+          routerLink="/reports"
+          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+          Dashboard Gerencial
+        </a>
+        <a
+          routerLink="/reports/audit"
+          class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white shadow-sm">
+          Bitácora de Auditoría
+        </a>
+      </div>
+    </div>
+
+    <!-- Filtros de Auditoría -->
+    <section class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="employeeId">
+            Empleado
+          </label>
+          <select
+            id="employeeId"
+            [ngModel]="employeeId()"
+            (ngModelChange)="employeeId.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-employee">
+            <option value="ALL">Todos los empleados</option>
+            @for (emp of employees; track emp.id) {
+              <option [value]="emp.id">{{ emp.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="startDateTime">
+            Rango Horario Desde
+          </label>
+          <input
+            id="startDateTime"
+            type="datetime-local"
+            [ngModel]="startDateTime()"
+            (ngModelChange)="startDateTime.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-start-datetime" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="endDateTime">
+            Rango Horario Hasta
+          </label>
+          <input
+            id="endDateTime"
+            type="datetime-local"
+            [ngModel]="endDateTime()"
+            (ngModelChange)="endDateTime.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-end-datetime" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1" for="eventType">
+            Tipo de Evento
+          </label>
+          <select
+            id="eventType"
+            [ngModel]="eventType()"
+            (ngModelChange)="eventType.set($event)"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:border-pine-600 focus:outline-none"
+            data-testid="filter-event-type">
+            @for (ev of eventTypes; track ev.value) {
+              <option [value]="ev.value">{{ ev.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5 pt-2 border-t border-slate-100">
+        <button
+          type="button"
+          (click)="applyFilters()"
+          class="rounded-xl bg-pine-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pine-800 transition-colors"
+          data-testid="btn-apply-audit-filters">
+          Buscar Eventos
+        </button>
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+          data-testid="btn-clear-audit-filters">
+          Limpiar
+        </button>
+      </div>
+    </section>
+
+    @if (errorMessage()) {
+      <div class="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs font-semibold text-rose-700">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <!-- Tabla Paginada de Auditoría -->
+    <section class="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="px-4 py-3">Fecha / Hora</th>
+              <th class="px-4 py-3">Empleado</th>
+              <th class="px-4 py-3">Evento</th>
+              <th class="px-4 py-3">Módulo</th>
+              <th class="px-4 py-3">Descripción</th>
+              <th class="px-4 py-3 text-right">Detalle Técnico</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
+            @if (isLoading()) {
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                  Cargando eventos de auditoría...
+                </td>
+              </tr>
+            } @else if (logs().length === 0) {
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-500" data-testid="empty-audit-logs">
+                  No se encontraron eventos con los filtros seleccionados.
+                </td>
+              </tr>
+            } @else {
+              @for (entry of logs(); track entry.id) {
+                <tr class="hover:bg-slate-50/80 transition-colors" data-testid="audit-row">
+                  <td class="px-4 py-3 font-mono text-[11px] whitespace-nowrap">
+                    {{ entry.timestamp | date: 'dd/MM/yyyy HH:mm' }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="font-semibold text-slate-800">{{ entry.employeeName }}</div>
+                    <div class="text-[11px] text-slate-400">{{ entry.employeeRole }}</div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="inline-flex rounded-lg border px-2 py-0.5 text-[10px] font-bold"
+                      [ngClass]="getEventBadgeClass(entry.eventType)">
+                      {{ entry.eventType }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-medium text-slate-700">{{ entry.module }}</td>
+                  <td class="px-4 py-3 max-w-md">{{ entry.actionSummary }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      (click)="openDetail(entry)"
+                      class="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-pine-700 hover:bg-pine-700 hover:text-white transition-colors"
+                      data-testid="btn-audit-detail">
+                      Ver detalle
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+        <span>
+          Total: <strong class="text-slate-800">{{ totalItems() }}</strong> eventos • Página
+          <strong class="text-slate-800">{{ currentPage() }}</strong> de
+          <strong class="text-slate-800">{{ totalPages() }}</strong>
+        </span>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="previousPage()"
+            [disabled]="currentPage() <= 1"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold hover:bg-slate-100 disabled:opacity-50"
+            data-testid="btn-prev-page">
+            Anterior
+          </button>
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="currentPage() >= totalPages()"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold hover:bg-slate-100 disabled:opacity-50"
+            data-testid="btn-next-page">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Modal de Detalle Técnico del Evento (Solo ADMIN) -->
+  @if (selectedLog(); as detail) {
+    @if (isAdmin()) {
+      <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4" data-testid="audit-detail-modal">
+        <div class="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 shadow-xl overflow-hidden">
+          <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-pine-700">
+                Detalle Técnico de Auditoría • {{ detail.id }}
+              </span>
+              <h2 class="text-base font-bold text-slate-800">{{ detail.actionSummary }}</h2>
+            </div>
+            <button
+              type="button"
+              (click)="closeDetail()"
+              class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              data-testid="btn-close-audit-detail">
+              Cerrar
+            </button>
+          </div>
+
+          <div class="p-6 space-y-4 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <span class="text-[10px] font-bold uppercase text-slate-400">Dirección IP</span>
+                <p class="font-mono font-bold text-slate-800 mt-0.5" data-testid="detail-ip">{{ detail.ipAddress }}</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <span class="text-[10px] font-bold uppercase text-slate-400">Dispositivo / Navegador</span>
+                <p class="font-semibold text-slate-800 mt-0.5" data-testid="detail-device">{{ detail.deviceInfo }}</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <span class="text-[10px] font-bold uppercase text-slate-400">Empleado</span>
+                <p class="font-semibold text-slate-800 mt-0.5">{{ detail.employeeName }} ({{ detail.employeeRole }})</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <span class="text-[10px] font-bold uppercase text-slate-400">Fecha / Hora</span>
+                <p class="font-mono font-semibold text-slate-800 mt-0.5">{{ detail.timestamp | date: 'dd/MM/yyyy HH:mm:ss' }}</p>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">
+                Payload Técnico del Evento
+              </span>
+              <pre
+                class="rounded-xl bg-slate-900 text-emerald-300 p-4 text-[11px] font-mono overflow-x-auto"
+                data-testid="detail-payload">{{ detail.payload | json }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>
